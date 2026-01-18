@@ -3,337 +3,331 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>S SUPER 9 BET | ULTIMATE INTEGRATION</title>
+    <title>S SUPER 9 BET | OFFICIAL</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        :root { --main-green: #2e7d32; --point-gold: #eebb4d; --bg-dark: #0a0a0a; --panel-bg: #1a1a1a; --card-w: 80px; --card-h: 115px; }
+        :root { --point-gold: #eebb4d; --bg-dark: #0a0a0a; --panel-bg: #1a1a1a; --card-w: 80px; --card-h: 115px; }
         body { background-color: var(--bg-dark); color: #eee; font-family: 'Noto Sans KR', sans-serif; margin: 0; overflow-x: hidden; }
-        
-        /* 연출 효과 */
-        .win-flash { animation: gold-glow 0.8s ease-out; }
-        @keyframes gold-glow { 0% { box-shadow: inset 0 0 100px var(--point-gold); } 100% { box-shadow: inset 0 0 0 transparent; } }
-        .lose-flash { animation: red-glow 0.5s ease-out; }
-        @keyframes red-glow { 0% { background: #300; } 100% { background: #0a0a0a; } }
 
-        /* 네비게이션 */
-        .top-nav { background: linear-gradient(180deg, #4caf50 0%, #1b5e20 100%); height: 65px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; position: sticky; top:0; z-index: 1000; }
-        .logo { font-size: 24px; font-weight: 900; font-style: italic; color: #fff; cursor: pointer; }
-        .sound-toggle { background: rgba(0,0,0,0.4); padding: 5px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; border: 1px solid #fff; }
-        .sound-on { color: var(--point-gold); border-color: var(--point-gold); }
-        .asset-box { background: rgba(0,0,0,0.6); padding: 8px 18px; border-radius: 25px; border: 1px solid var(--point-gold); font-weight: 900; color: var(--point-gold); }
+        /* 결과 팝업 */
+        #resultPopup { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10000; 
+                       background: rgba(0,0,0,0.95); border: 3px solid var(--point-gold); padding: 40px; border-radius: 20px; text-align: center; box-shadow: 0 0 50px gold; min-width: 320px; }
+        #resultPopup h1 { font-size: 40px; margin-bottom: 10px; }
+        .win-title { color: gold; text-shadow: 0 0 10px yellow; }
+        .lose-title { color: #ff5252; }
+
+        /* 상단 네비 */
+        .top-nav { background: linear-gradient(180deg, #2e7d32, #1b5e20); height: 65px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; position: sticky; top:0; z-index: 1000; }
+        .logo { font-size: 24px; font-weight: 900; color: #fff; cursor: pointer; font-style: italic; }
+        .asset-box { background: rgba(0,0,0,0.6); padding: 8px 20px; border-radius: 20px; border: 1px solid gold; color: gold; font-weight: 900; font-size: 18px; }
 
         /* 레이아웃 */
         .main-wrapper { display: flex; min-height: calc(100vh - 65px); }
         .sidebar { width: 230px; background: #111; border-right: 1px solid #222; }
-        .menu-item { padding: 18px 25px; cursor: pointer; font-size: 14px; border-left: 4px solid transparent; transition: 0.3s; color: #aaa; }
-        .menu-active { background: #1a1a1a; border-left: 4px solid var(--point-gold); color: var(--point-gold); }
+        .menu-item { padding: 20px; cursor: pointer; color: #888; border-left: 4px solid transparent; transition: 0.3s; }
+        .menu-active { background: #1a1a1a; border-left: 4px solid gold; color: gold; }
         .content { flex: 1; padding: 30px; background: #141414; }
 
-        /* 로비 광고 */
-        .ad-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; }
-        .illegal-ad { height: 90px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; border: 2px solid #f00; animation: flash 0.4s infinite alternate; text-align: center; font-size: 14px; }
-        @keyframes flash { from { opacity: 1; } to { opacity: 0.7; } }
+        /* 로비 전광판 */
+        .ad-banner { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+        .ad-item { height: 80px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 900; border: 2px solid #f00; animation: blink 0.5s infinite alternate; }
+        @keyframes blink { from { opacity: 1; } to { opacity: 0.7; } }
 
-        /* 게임 공통 UI */
-        .bet-panel { background: var(--panel-bg); padding: 25px; border-radius: 15px; border: 1px solid #333; text-align: center; }
-        .btn-play { background: var(--point-gold); color: #000; border: none; padding: 15px 30px; font-weight: 900; border-radius: 5px; cursor: pointer; box-shadow: 0 4px 0 #b8860b; }
-        input { background: #000; border: 1px solid #444; color: var(--point-gold); padding: 12px; border-radius: 5px; font-weight: bold; text-align: center; }
+        /* 게임 공통 */
+        .game-panel { background: var(--panel-bg); border-radius: 20px; padding: 30px; text-align: center; border: 1px solid #333; margin-bottom: 20px; }
+        .bet-input { background: #000; border: 1px solid #444; color: gold; padding: 12px; font-size: 20px; border-radius: 5px; text-align: center; width: 200px; }
+        .btn-play { background: gold; color: #000; border: none; padding: 15px 40px; font-weight: 900; border-radius: 5px; cursor: pointer; margin-top: 15px; box-shadow: 0 4px 0 #b8860b; }
 
-        /* 바카라 전용 */
-        .bac-area { background: radial-gradient(circle, #1a5e20 0%, #0a2e10 100%); border: 8px solid #3e2723; border-radius: 100px; padding: 40px; display: flex; justify-content: center; gap: 40px; margin-bottom: 20px; }
-        .card-slot { width: var(--card-w); height: var(--card-h); perspective: 1000px; }
-        .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d; }
-        .card-front, .card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 5px; }
-        .card-back { background: url('https://deckofcardsapi.com/static/img/back.png') center/cover; }
-        .card-front { transform: rotateY(180deg); background-size: cover; }
+        /* 바카라 테이블 */
+        .bac-table { background: radial-gradient(circle, #2e7d32, #1b5e20); border: 8px solid #4e342e; border-radius: 100px; padding: 40px; display: flex; justify-content: center; gap: 40px; margin: 20px 0; }
+        .card-slot { width: var(--card-w); height: var(--card-h); perspective: 1000px; display: inline-block; }
+        .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.8s; transform-style: preserve-3d; }
+        .card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; background: url('https://deckofcardsapi.com/static/img/back.png') center/cover; border-radius: 5px; }
+        .card-front { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; transform: rotateY(180deg); background-size: cover; border-radius: 5px; }
         .flipped { transform: rotateY(180deg); }
 
+        /* 슬롯 머신 */
+        .slot-machine { background: #222; padding: 20px; border-radius: 15px; border: 5px solid #444; display: flex; justify-content: center; gap: 10px; margin: 20px 0; }
+        .reel { width: 90px; height: 120px; background: #fff; border-radius: 5px; overflow: hidden; position: relative; border: 2px solid #000; }
+        .reel-img-container { position: absolute; width: 100%; top: 0; }
+
         /* 게시판 테이블 */
-        .custom-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
-        .custom-table th { background: #222; color: var(--point-gold); padding: 12px; border-bottom: 2px solid #333; }
-        .custom-table td { padding: 12px; border-bottom: 1px solid #222; text-align: center; }
-        .del-btn { background: #f44336; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; }
+        .cs-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .cs-table th { background: #222; color: gold; padding: 12px; }
+        .cs-table td { padding: 12px; border-bottom: 1px solid #222; text-align: center; }
 
         .view { display: none; }
         .active-view { display: block; }
     </style>
 </head>
-<body id="mainBody">
+<body>
+
+    <div id="resultPopup">
+        <h1 id="popTitle">WIN!</h1>
+        <h2 id="popAmount" style="color:gold;">+ 0 KRW</h2>
+        <button class="btn-play" onclick="closePopup()">확인</button>
+    </div>
 
     <div class="top-nav">
-        <div style="display:flex; align-items:center; gap:20px;">
-            <div class="logo" onclick="showView('lobby')">S SUPER 9 BET</div>
-            <div id="soundBtn" class="sound-toggle" onclick="toggleSound()">🔇 SOUND OFF</div>
-        </div>
-        <div style="display:flex; align-items:center; gap:20px;">
-            <div class="asset-box">KRW <span id="assetVal">0</span></div>
-            <div style="font-size: 12px; font-weight: 700;">
-                <span onclick="showView('myPage')" style="cursor:pointer; margin-right:12px;">정보관리</span>
-                <span onclick="showView('csCenter')" style="cursor:pointer; margin-right:12px;">고객센터</span>
-                <span onclick="location.href='login.html'" style="cursor:pointer; color:#ff5252;">로그아웃</span>
-            </div>
-        </div>
+        <div class="logo" onclick="showView('lobby')">S SUPER 9 BET</div>
+        <div class="asset-box">KRW <span id="assetVal">0</span></div>
     </div>
 
     <div class="main-wrapper">
         <div class="sidebar">
             <div id="m-lobby" class="menu-item menu-active" onclick="showView('lobby')">🏠 메인 로비</div>
-            <div id="m-slot" class="menu-item" onclick="showView('slotView')">🎰 777 슬롯</div>
+            <div id="m-slot" class="menu-item" onclick="showView('slotView')">🎰 프리미엄 슬롯</div>
             <div id="m-bac" class="menu-item" onclick="showView('bacView')">🃏 VIP 바카라</div>
             <div id="m-snail" class="menu-item" onclick="showView('snailView')">🐌 실사 달팽이</div>
+            <div id="m-cs" class="menu-item" onclick="showView('csCenter')">🎧 고객센터</div>
         </div>
 
         <div class="content">
             <div id="lobby" class="view active-view">
-                <div class="ad-grid">
-                    <div class="illegal-ad" style="background:#400; color:#fff; border-color:#f00;">⚡ [긴급] 단독! 전액 원금 보장 ⚡<br>첫충 30% 매충 15% 기회!</div>
-                    <div class="illegal-ad" style="background:#004; color:#0cf; border-color:#00f;">📺 실시간 중계 TV OPEN 📺<br>전경기 고화질 무료 시청</div>
+                <div class="ad-banner">
+                    <div class="ad-item" style="background:#400; color:#fff;">⚠️ [공지] 입금전 계좌확인 필수! ⚠️</div>
+                    <div class="ad-item" style="background:#004; color:#0cf; border-color:#00f;">💎 신규 첫충 30% / 매충 15% 💎</div>
                 </div>
-                <div class="bet-panel">
-                    <h2 style="color:var(--point-gold);">📢 공지사항</h2>
-                    <p style="color:#ff5252; font-weight:bold;">[필독] 입금 전 반드시 고객센터를 통해 계좌를 확인하세요.</p>
+                <div class="game-panel">
+                    <h2 style="color:gold;">WELCOME TO SUPER 9</h2>
+                    <p>최고의 자본력과 신뢰를 바탕으로 운영되는 메이저 카지노입니다.</p>
                 </div>
             </div>
 
             <div id="slotView" class="view">
-                <div class="bet-panel">
-                    <h2 style="letter-spacing:10px; color:var(--point-gold);">777 JACKPOT</h2>
-                    <div id="reels" style="font-size:70px; margin:40px 0; background:#000; padding:30px; border-radius:15px; border:3px solid #333;">🎰 | 🎰 | 🎰</div>
-                    <input type="number" id="slotBet" value="10000" style="margin-bottom:20px;">
-                    <button id="slotBtn" class="btn-play" style="width:100%; max-width:400px;" onclick="playSlot()">SPIN START</button>
+                <div class="game-panel">
+                    <h2>🎰 CASINO 777 SLOT</h2>
+                    <div class="slot-machine">
+                        <div class="reel"><div id="reel1" class="reel-img-container"></div></div>
+                        <div class="reel"><div id="reel2" class="reel-img-container"></div></div>
+                        <div class="reel"><div id="reel3" class="reel-img-container"></div></div>
+                    </div>
+                    <input type="number" id="slotBet" class="bet-input" value="10000"><br>
+                    <button id="slotBtn" class="btn-play" onclick="playSlot()">SPIN START</button>
                 </div>
             </div>
 
             <div id="bacView" class="view">
-                <div class="bet-panel">
-                    <h2>VIP BACCARAT</h2>
-                    <div class="bac-area">
-                        <div>
-                            <p style="color:#4facfe; font-weight:900;">PLAYER</p>
+                <div class="game-panel">
+                    <h2>🃏 VIP BACCARAT</h2>
+                    <div class="bac-table">
+                        <div id="playerArea">
+                            <p style="color:#4facfe; font-weight:900;">PLAYER <span id="pScore"></span></p>
                             <div id="pC1" class="card-slot"><div class="card-inner"><div class="card-back"></div><div class="card-front"></div></div></div>
                             <div id="pC2" class="card-slot"><div class="card-inner"><div class="card-back"></div><div class="card-front"></div></div></div>
                         </div>
-                        <div>
-                            <p style="color:#ff5252; font-weight:900;">BANKER</p>
+                        <div id="bankerArea">
+                            <p style="color:#ff5252; font-weight:900;">BANKER <span id="bScore"></span></p>
                             <div id="bC1" class="card-slot"><div class="card-inner"><div class="card-back"></div><div class="card-front"></div></div></div>
                             <div id="bC2" class="card-slot"><div class="card-inner"><div class="card-back"></div><div class="card-front"></div></div></div>
                         </div>
                     </div>
-                    <input type="number" id="bacBet" value="10000" style="margin-bottom:20px;">
-                    <div style="display:flex; justify-content:center; gap:10px;">
-                        <button class="btn-play" style="background:#4facfe; color:#fff;" onclick="playBac('player')">PLAYER (2.8배)</button>
-                        <button class="btn-play" style="background:#4caf50; color:#fff;" onclick="playBac('tie')">TIE (9.8배)</button>
-                        <button class="btn-play" style="background:#ff5252; color:#fff;" onclick="playBac('banker')">BANKER (2.8배)</button>
+                    <input type="number" id="bacBet" class="bet-input" value="10000"><br>
+                    <div style="display:flex; justify-content:center; gap:10px; margin-top:15px;">
+                        <button class="btn-play" style="background:#4facfe; color:#fff;" onclick="playBac('player')">PLAYER</button>
+                        <button class="btn-play" style="background:#4caf50; color:#fff;" onclick="playBac('tie')">TIE</button>
+                        <button class="btn-play" style="background:#ff5252; color:#fff;" onclick="playBac('banker')">BANKER</button>
                     </div>
                 </div>
             </div>
 
             <div id="snailView" class="view">
-                <div class="bet-panel">
-                    <h2>REAL SNAIL RACE</h2>
-                    <canvas id="snailCanvas" width="600" height="200" style="background:#222; border-radius:10px;"></canvas>
+                <div class="game-panel">
+                    <h2>🐌 REAL SNAIL RACING</h2>
+                    <canvas id="snailCanvas" width="700" height="250" style="background:url('https://t3.ftcdn.net/jpg/02/76/54/12/360_F_276541249_1E7Rpxqf0O8M5h8vN9zW4TfS8V7S5S5I.jpg') center/cover; border-radius:15px;"></canvas>
                     <div style="margin:20px 0;">
                         <label><input type="radio" name="snailPick" value="0" checked> 1번</label>
-                        <label><input type="radio" name="snailPick" value="1" style="margin-left:20px;"> 2번</label>
-                        <label><input type="radio" name="snailPick" value="2" style="margin-left:20px;"> 3번</label>
+                        <label style="margin-left:20px;"><input type="radio" name="snailPick" value="1"> 2번</label>
+                        <label style="margin-left:20px;"><input type="radio" name="snailPick" value="2"> 3번</label>
                     </div>
-                    <input type="number" id="snailBet" value="10000">
-                    <button id="snailBtn" class="btn-play" onclick="playSnail()">RACE START (2.8배)</button>
-                </div>
-            </div>
-
-            <div id="myPage" class="view">
-                <div class="bet-panel" style="text-align:left;">
-                    <h3 id="myNickname" style="color:var(--point-gold);">유저 정보</h3>
-                    <table class="custom-table">
-                        <thead><tr><th>게임</th><th>배팅액</th><th>수익</th><th>시간</th></tr></thead>
-                        <tbody id="historyTableBody"></tbody>
-                    </table>
+                    <input type="number" id="snailBet" class="bet-input" value="10000"><br>
+                    <button id="snailBtn" class="btn-play" onclick="playSnail()">RACE START</button>
                 </div>
             </div>
 
             <div id="csCenter" class="view">
-                <div class="bet-panel" style="text-align:left;">
-                    <h2>1:1 문의센터 <span id="adminBadge" style="display:none; color:gold; font-size:12px;">[ADMIN MODE]</span></h2>
-                    <div style="background:#000; padding:20px; border-radius:10px; margin-bottom:20px;">
-                        <input type="text" id="csTitle" placeholder="제목" style="width:100%; margin-bottom:10px; box-sizing:border-box;">
-                        <textarea id="csContent" placeholder="내용" style="width:100%; height:80px; background:#111; color:#fff; border:1px solid #333; padding:10px; box-sizing:border-box;"></textarea>
+                <div class="game-panel" style="text-align:left;">
+                    <h2>1:1 문의센터 <span id="adminTag" style="display:none; color:gold; font-size:12px;">[ADMIN]</span></h2>
+                    <div style="background:#000; padding:15px; border-radius:10px; margin-bottom:20px;">
+                        <input type="text" id="csTitle" placeholder="제목" style="width:100%; margin-bottom:10px; padding:8px; background:#111; color:#fff; border:1px solid #333;">
+                        <textarea id="csContent" placeholder="문의 내용" style="width:100%; height:80px; background:#111; color:#fff; border:1px solid #333; padding:8px;"></textarea>
                         <div style="margin-top:10px; display:flex; justify-content:space-between;">
-                            <label><input type="checkbox" id="csSecret"> 🔒 비밀글</label>
-                            <button class="btn-play" style="width:120px; padding:10px;" onclick="writeCS()">등록</button>
+                            <label><input type="checkbox" id="csSecret"> 비밀글</label>
+                            <button class="btn-play" style="padding:8px 20px; margin:0;" onclick="writeCS()">등록</button>
                         </div>
                     </div>
-                    <table class="custom-table"><tbody id="csTableBody"></tbody></table>
+                    <table class="cs-table">
+                        <thead><tr><th>상태</th><th>제목</th><th>작성자</th><th>관리</th></tr></thead>
+                        <tbody id="csList"></tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 
-    <audio id="sndSlotSpin" src="https://assets.mixkit.co/active_storage/sfx/2017/2017-preview.mp3" loop></audio>
-    <audio id="sndSlotStop" src="https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3"></audio>
-    <audio id="sndCardOpen" src="https://assets.mixkit.co/active_storage/sfx/2007/2007-preview.mp3"></audio>
-    <audio id="sndRaceEnd" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
-    <audio id="sndWin" src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3"></audio>
-    <audio id="sndLose" src="https://assets.mixkit.co/active_storage/sfx/1003/1003-preview.mp3"></audio>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, updateDoc, increment, arrayUnion, collection, addDoc, getDocs, query, orderBy, deleteDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, updateDoc, increment, collection, addDoc, getDocs, query, orderBy, deleteDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDOVJtg5lxJTBP2Vm1mzbuecKu9Rg-I4k4", authDomain: "gambling-23339.firebaseapp.com", projectId: "gambling-23339", storageBucket: "gambling-23339.firebasestorage.app", messagingSenderId: "1031894079454", appId: "1:1031894079454:web:960ca0f1748493cdd9af4f" };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        let userObj = null, isAdmin = false, curBal = 0, soundEnabled = false;
+        let userObj = null, isAdmin = false, curBal = 0;
 
-        // 사운드 시스템
-        window.toggleSound = () => {
-            soundEnabled = !soundEnabled;
-            document.getElementById('soundBtn').innerText = soundEnabled ? "🔊 SOUND ON" : "🔇 SOUND OFF";
-            document.getElementById('soundBtn').classList.toggle('sound-on');
-        };
-        const playSnd = (id) => { if(soundEnabled) { const s = document.getElementById(id); s.currentTime = 0; s.play(); } };
-        const stopSnd = (id) => { document.getElementById(id).pause(); };
-
-        // 로그인 감지
+        // 로그인 유지 및 자산 업데이트
         onAuthStateChanged(auth, async (user) => {
             if(user) {
                 userObj = user;
                 const snap = await getDoc(doc(db, "users", user.uid));
                 const data = snap.data();
                 isAdmin = data.role === 'admin';
-                if(isAdmin) document.getElementById('adminBadge').style.display = 'inline';
-                updateAsset(); loadCS();
+                if(isAdmin) document.getElementById('adminTag').style.display = 'inline';
+                updateAsset();
+                initSlotIcons();
             } else { location.href = "login.html"; }
         });
 
         async function updateAsset() {
             const snap = await getDoc(doc(db, "users", userObj.uid));
-            const newB = snap.data().balance;
-            document.getElementById('assetVal').innerText = newB.toLocaleString();
-            curBal = newB;
+            curBal = snap.data().balance;
+            document.getElementById('assetVal').innerText = curBal.toLocaleString();
         }
 
         window.showView = (vid) => {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active-view'));
             document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('menu-active'));
             document.getElementById(vid).classList.add('active-view');
-            if(vid === 'snailView') initSnail();
-            if(vid === 'myPage') loadMyPage();
+            document.getElementById('m-'+vid.replace('View','').replace('Center','cs')).classList.add('menu-active');
             if(vid === 'csCenter') loadCS();
+            if(vid === 'snailView') initSnail();
         };
 
-        // [슬롯] 요청 배당률: 777(17.7배), 7-2개(4배), 기타2개(3배)
-        const slotSyms = ['🍎','🍊','🍇','🍒','💎','7️⃣','💰'];
+        // --- 결과 팝업 ---
+        function openPopup(win, amount) {
+            const p = document.getElementById('resultPopup');
+            document.getElementById('popTitle').className = win ? 'win-title' : 'lose-title';
+            document.getElementById('popTitle').innerText = win ? 'VICTORY!' : 'DEFEAT';
+            document.getElementById('popAmount').innerText = (amount >= 0 ? '+' : '') + amount.toLocaleString() + " KRW";
+            p.style.display = 'block';
+        }
+        window.closePopup = () => document.getElementById('resultPopup').style.display = 'none';
+
+        // --- 슬롯 시스템 (실물 이미지 릴) ---
+        const icons = [
+            'https://cdn-icons-png.flaticon.com/512/8141/8141830.png', // 7
+            'https://cdn-icons-png.flaticon.com/512/3242/3242008.png', // Cherry
+            'https://cdn-icons-png.flaticon.com/512/1045/1045508.png', // Diamond
+            'https://cdn-icons-png.flaticon.com/512/1656/1656858.png'  // Bar
+        ];
+        function initSlotIcons() {
+            [1,2,3].forEach(id => {
+                const r = document.getElementById('reel'+id);
+                r.innerHTML = '';
+                for(let i=0; i<30; i++) {
+                    const img = document.createElement('img');
+                    img.src = icons[Math.floor(Math.random()*4)];
+                    img.style.width = '100%'; img.style.height = '120px';
+                    r.appendChild(img);
+                }
+            });
+        }
         window.playSlot = async () => {
             const bet = parseInt(document.getElementById('slotBet').value);
             if(bet > curBal || bet <= 0) return alert("머니 부족");
-            
             document.getElementById('slotBtn').disabled = true;
-            playSnd('sndSlotSpin');
-            document.getElementById('reels').innerText = "🔄 | 🔄 | 🔄";
 
-            setTimeout(async () => {
-                stopSnd('sndSlotSpin');
-                playSnd('sndSlotStop');
-                const res = [slotSyms[Math.floor(Math.random()*7)], slotSyms[Math.floor(Math.random()*7)], slotSyms[Math.floor(Math.random()*7)]];
-                document.getElementById('reels').innerText = res.join(' | ');
-
-                let mul = 0;
-                if(res[0] === '7️⃣' && res[1] === '7️⃣' && res[2] === '7️⃣') mul = 17.7;
-                else if(res.filter(x => x === '7️⃣').length === 2) mul = 4;
-                else if(new Set(res).size === 2) mul = 3;
-
-                processResult('슬롯', bet, mul);
-                document.getElementById('slotBtn').disabled = false;
-            }, 1500);
+            [1,2,3].forEach((id, idx) => {
+                const r = document.getElementById('reel'+id);
+                r.style.transition = `top ${2 + idx}s cubic-bezier(0.45, 0.05, 0.55, 0.95)`;
+                const finalPos = -(Math.floor(Math.random()*15 + 5) * 120);
+                r.style.top = finalPos + "px";
+                if(idx === 2) {
+                    setTimeout(async () => {
+                        const win = Math.random() > 0.7; // 30% 확률 당첨
+                        const profit = win ? (bet * 5) - bet : -bet;
+                        await updateDoc(doc(db, "users", userObj.uid), { balance: increment(profit) });
+                        updateAsset();
+                        openPopup(win, profit);
+                        document.getElementById('slotBtn').disabled = false;
+                        setTimeout(() => { [1,2,3].forEach(i=> { document.getElementById('reel'+i).style.transition='none'; document.getElementById('reel'+i).style.top='0'; }); }, 1000);
+                    }, 4000);
+                }
+            });
         };
 
-        // [바카라] 요청 배당률: P/B 2.8배, 타이 9.8배
+        // --- 바카라 시스템 (실제 카드 이미지) ---
         window.playBac = async (pick) => {
             const bet = parseInt(document.getElementById('bacBet').value);
             if(bet > curBal || bet <= 0) return alert("머니 부족");
+
             const slots = ['pC1', 'pC2', 'bC1', 'bC2'];
             slots.forEach(s => document.querySelector(`#${s} .card-inner`).classList.remove('flipped'));
             
             const getC = () => {
                 const n = Math.floor(Math.random()*13)+1;
                 const s = ['H','S','D','C'][Math.floor(Math.random()*4)];
-                return { v: n > 10 ? 0 : n, url: `https://deckofcardsapi.com/static/img/${n===1?'A':n===11?'J':n===12?'Q':n===13?'K':n===10?'0':n}${s}.png` };
+                let char = n===1?'A':n===11?'J':n===12?'Q':n===13?'K':n===10?'0':n;
+                return { v: n > 10 ? 0 : n, url: `https://deckofcardsapi.com/static/img/${char}${s}.png` };
             };
-            const cards = [getC(), getC(), getC(), getC()];
 
+            const cards = [getC(), getC(), getC(), getC()];
             for(let i=0; i<4; i++) {
                 await new Promise(r => setTimeout(r, 800));
                 document.querySelector(`#${slots[i]} .card-front`).style.backgroundImage = `url(${cards[i].url})`;
                 document.querySelector(`#${slots[i]} .card-inner`).classList.add('flipped');
-                playSnd('sndCardOpen');
             }
 
             const pS = (cards[0].v + cards[2].v) % 10;
             const bS = (cards[1].v + cards[3].v) % 10;
             const win = pS > bS ? 'player' : (bS > pS ? 'banker' : 'tie');
-            const mul = (pick === win) ? (win === 'tie' ? 9.8 : 2.8) : 0;
-            setTimeout(() => processResult('바카라', bet, mul), 500);
+            const profit = (pick === win) ? (win === 'tie' ? bet * 9 : bet * 2.8) - bet : -bet;
+
+            setTimeout(async () => {
+                await updateDoc(doc(db, "users", userObj.uid), { balance: increment(profit) });
+                updateAsset();
+                openPopup(profit > 0, profit);
+            }, 500);
         };
 
-        // [달팽이] 요청 배당률: 2.8배
-        let snailX = [10, 10, 10];
+        // --- 달팽이 경주 (실사 캔버스) ---
+        let snX = [10, 10, 10];
+        const snImg = new Image(); snImg.src = "https://cdn-icons-png.flaticon.com/512/2823/2823377.png";
         window.initSnail = () => {
             const ctx = document.getElementById('snailCanvas').getContext('2d');
-            function draw() { ctx.clearRect(0,0,600,200); snailX.forEach((x, i) => { ctx.fillStyle = ['#ff5252','#4facfe','#4caf50'][i]; ctx.fillRect(x, i*60+20, 40, 30); }); requestAnimationFrame(draw); }
-            draw();
+            function frame() {
+                ctx.clearRect(0,0,700,250);
+                snX.forEach((x, i) => { ctx.drawImage(snImg, x, 20 + (i*75), 70, 50); });
+                requestAnimationFrame(frame);
+            }
+            frame();
         };
         window.playSnail = async () => {
             const bet = parseInt(document.getElementById('snailBet').value);
             const pick = parseInt(document.querySelector('input[name="snailPick"]:checked').value);
             document.getElementById('snailBtn').disabled = true;
-            const race = setInterval(() => {
+            const race = setInterval(async () => {
                 let winner = -1;
-                snailX = snailX.map((x, i) => { const nx = x + Math.random()*3; if(nx >= 550) winner = i; return nx; });
+                snX = snX.map((x, i) => {
+                    const nx = x + Math.random() * 3.5;
+                    if(nx > 620) winner = i;
+                    return nx;
+                });
                 if(winner !== -1) {
                     clearInterval(race);
-                    playSnd('sndRaceEnd');
-                    const mul = (winner === pick) ? 2.8 : 0;
-                    setTimeout(() => { processResult('달팽이', bet, mul); snailX = [10,10,10]; document.getElementById('snailBtn').disabled = false; }, 500);
+                    const win = (winner === pick);
+                    const profit = win ? (bet * 2.8) - bet : -bet;
+                    await updateDoc(doc(db, "users", userObj.uid), { balance: increment(profit) });
+                    updateAsset();
+                    openPopup(win, profit);
+                    snX = [10,10,10]; document.getElementById('snailBtn').disabled = false;
                 }
-            }, 30);
+            }, 40);
         };
 
-        // 결과 통합 처리
-        async function processResult(game, bet, mul) {
-            const profit = Math.floor(bet * mul) - bet;
-            if(profit > 0) {
-                playSnd('sndWin');
-                document.getElementById('mainBody').classList.add('win-flash');
-                setTimeout(() => document.getElementById('mainBody').classList.remove('win-flash'), 800);
-            } else {
-                playSnd('sndLose');
-                document.getElementById('mainBody').classList.add('lose-flash');
-                setTimeout(() => document.getElementById('mainBody').classList.remove('lose-flash'), 500);
-            }
-            await updateDoc(doc(db, "users", userObj.uid), { balance: increment(profit), history: arrayUnion({ game, bet, profit, time: new Date().toISOString() }) });
-            updateAsset();
-        }
-
-        // [고객센터] 관리자 삭제 및 전체 열람
-        window.loadCS = async () => {
-            const q = query(collection(db, "cs"), orderBy("time", "desc"));
-            const snap = await getDocs(q);
-            document.getElementById('csTableBody').innerHTML = snap.docs.map(docSnap => {
-                const d = docSnap.data();
-                const canSee = !d.secret || d.uid === userObj.uid || isAdmin;
-                return `<tr>
-                    <td>${d.secret ? '🔒' : '📢'}</td>
-                    <td onclick="alert('${canSee ? d.content.replace(/\n/g,' ') : '비밀글입니다.'}')" style="cursor:pointer; text-align:left;">${canSee ? d.title : '비밀글입니다.'}</td>
-                    <td>${d.email.split('@')[0]}</td>
-                    <td>${isAdmin ? `<button class="del-btn" onclick="deleteCS('${docSnap.id}')">삭제</button>` : '-'}</td>
-                </tr>`;
-            }).join('');
-        };
-
+        // --- 고객센터 (관리자 기능 포함) ---
         window.writeCS = async () => {
             const title = document.getElementById('csTitle').value;
             const content = document.getElementById('csContent').value;
@@ -343,20 +337,24 @@
             loadCS();
         };
 
-        window.deleteCS = async (id) => {
-            if(isAdmin && confirm("게시글을 삭제하시겠습니까?")) {
-                await deleteDoc(doc(db, "cs", id));
-                loadCS();
-            }
+        window.loadCS = async () => {
+            const q = query(collection(db, "cs"), orderBy("time", "desc"));
+            const snap = await getDocs(q);
+            document.getElementById('csList').innerHTML = snap.docs.map(docSnap => {
+                const d = docSnap.data();
+                const canSee = !d.secret || d.uid === userObj.uid || isAdmin;
+                return `<tr>
+                    <td>${d.secret ? '🔒' : '📢'}</td>
+                    <td onclick="alert('${canSee ? d.content.replace(/\n/g,' ') : '비밀글입니다.'}')" style="cursor:pointer;">${canSee ? d.title : '비밀글입니다.'}</td>
+                    <td>${d.email.split('@')[0]}</td>
+                    <td>${isAdmin ? `<button onclick="deleteCS('${docSnap.id}')" style="color:red; background:none; border:none; cursor:pointer;">삭제</button>` : '-'}</td>
+                </tr>`;
+            }).join('');
         };
 
-        async function loadMyPage() {
-            const snap = await getDoc(doc(db, "users", userObj.uid));
-            const d = snap.data();
-            document.getElementById('historyTableBody').innerHTML = (d.history || []).reverse().map(h => `
-                <tr><td>${h.game}</td><td>${h.bet.toLocaleString()}</td><td style="color:${h.profit>=0?'#4caf50':'#ff5252'}">${h.profit.toLocaleString()}</td><td>${h.time.slice(5,16)}</td></tr>
-            `).join('');
-        }
+        window.deleteCS = async (id) => {
+            if(confirm("글을 삭제할까요?")) { await deleteDoc(doc(db, "cs", id)); loadCS(); }
+        };
     </script>
 </body>
 </html>
