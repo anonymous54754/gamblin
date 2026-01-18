@@ -2,10 +2,11 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=1280"> <title>로그인 | SUPER 9 BET</title>
+    <meta name="viewport" content="width=1280">
+    <title>로그인 및 회원가입 | SUPER 9 BET</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        :root { --point-gold: #eebb4d; --bg-dark: #0a0a0a; }
+        :root { --point-gold: #eebb4d; --bg-dark: #0a0a0a; --neon-gold: 0 0 10px #eebb4d, 0 0 20px #eebb4d; }
         body { 
             background-color: var(--bg-dark); 
             color: #fff; 
@@ -23,11 +24,16 @@
             border-radius: 20px;
             border: 2px solid var(--point-gold);
             text-align: center;
-            box-shadow: 0 0 30px rgba(238, 187, 77, 0.2);
+            box-shadow: var(--neon-gold); /* 네온 효과 */
             width: 400px;
         }
-        .logo { font-size: 32px; font-weight: 900; color: #fff; font-style: italic; margin-bottom: 30px; }
+        .logo { font-size: 32px; font-weight: 900; color: #fff; font-style: italic; margin-bottom: 30px; text-shadow: var(--neon-gold); }
         .logo span { color: var(--point-gold); }
+        
+        .tab-menu { display: flex; margin-bottom: 20px; border-bottom: 1px solid #333; }
+        .tab { flex: 1; padding: 10px; cursor: pointer; color: #888; font-weight: 700; }
+        .tab.active { color: var(--point-gold); border-bottom: 2px solid var(--point-gold); }
+
         input {
             width: 100%;
             padding: 15px;
@@ -37,8 +43,11 @@
             color: #fff;
             border-radius: 5px;
             box-sizing: border-box;
+            transition: 0.3s;
         }
-        .btn-login {
+        input:focus { border-color: var(--point-gold); outline: none; box-shadow: 0 0 5px var(--point-gold); }
+
+        .btn-main {
             width: 100%;
             padding: 15px;
             background: linear-gradient(to bottom, #ffd700, #b8860b);
@@ -48,32 +57,42 @@
             font-size: 18px;
             border-radius: 5px;
             cursor: pointer;
-            transition: 0.2s;
+            box-shadow: 0 4px 0 #7b6500;
         }
-        .btn-login:hover { transform: scale(1.02); }
-        .footer-links { margin-top: 20px; font-size: 14px; color: #888; }
-        .footer-links span { color: var(--point-gold); cursor: pointer; margin: 0 10px; }
+        .btn-main:active { transform: translateY(2px); box-shadow: none; }
+        
+        #registerForm { display: none; }
     </style>
 </head>
 <body>
 
     <div class="login-box">
         <div class="logo">S <span>SUPER 9 BET</span></div>
-        <input type="text" id="email" placeholder="이메일 주소를 입력하세요">
-        <input type="password" id="pw" placeholder="비밀번호를 입력하세요">
-        <button class="btn-login" onclick="handleLogin()">로그인 접속</button>
         
-        <div class="footer-links">
-            <span onclick="alert('관리자에게 문의하세요.')">회원가입</span> | 
-            <span onclick="alert('고객센터로 연락바랍니다.')">비밀번호 찾기</span>
+        <div class="tab-menu">
+            <div id="t-login" class="tab active" onclick="showTab('login')">로그인</div>
+            <div id="t-join" class="tab" onclick="showTab('join')">회원가입</div>
+        </div>
+
+        <div id="loginForm">
+            <input type="text" id="loginEmail" placeholder="이메일 주소">
+            <input type="password" id="loginPw" placeholder="비밀번호">
+            <button class="btn-main" onclick="handleLogin()">로그인 접속</button>
+        </div>
+
+        <div id="registerForm">
+            <input type="text" id="regNick" placeholder="사용할 닉네임">
+            <input type="email" id="regEmail" placeholder="이메일 주소">
+            <input type="password" id="regPw" placeholder="비밀번호 (6자 이상)">
+            <button class="btn-main" onclick="handleRegister()">회원가입 완료</button>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
-        // 기존에 사용하시던 Firebase 설정값을 그대로 사용하세요
         const firebaseConfig = { 
             apiKey: "AIzaSyDOVJtg5lxJTBP2Vm1mzbuecKu9Rg-I4k4", 
             authDomain: "gambling-23339.firebaseapp.com", 
@@ -84,18 +103,52 @@
         };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getFirestore(app);
 
+        // 탭 전환 함수
+        window.showTab = (type) => {
+            if(type === 'login') {
+                document.getElementById('loginForm').style.display = 'block';
+                document.getElementById('registerForm').style.display = 'none';
+                document.getElementById('t-login').classList.add('active');
+                document.getElementById('t-join').classList.remove('active');
+            } else {
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('registerForm').style.display = 'block';
+                document.getElementById('t-join').classList.add('active');
+                document.getElementById('t-login').classList.remove('active');
+            }
+        }
+
+        // 로그인 실행
         window.handleLogin = () => {
-            const email = document.getElementById('email').value;
-            const pw = document.getElementById('pw').value;
-
+            const email = document.getElementById('loginEmail').value;
+            const pw = document.getElementById('loginPw').value;
             signInWithEmailAndPassword(auth, email, pw)
-                .then(() => {
-                    location.href = "index.html"; // 로그인 성공 시 메인으로
+                .then(() => location.href = "index.html")
+                .catch(err => alert("로그인 실패: 정보를 확인하세요."));
+        };
+
+        // 회원가입 실행
+        window.handleRegister = () => {
+            const nick = document.getElementById('regNick').value;
+            const email = document.getElementById('regEmail').value;
+            const pw = document.getElementById('regPw').value;
+
+            if(!nick || !email || pw.length < 6) return alert("입력 정보를 확인하세요 (비번 6자 이상)");
+
+            createUserWithEmailAndPassword(auth, email, pw)
+                .then(async (result) => {
+                    // 가입 성공 시 Firestore에 초기 데이터 생성
+                    await setDoc(doc(db, "users", result.user.uid), {
+                        nickname: nick,
+                        balance: 100000, // 신규 가입 축하금 10만 원
+                        role: 'user'
+                    });
+                    alert("가입을 환영합니다! 100,000 포인트가 지급되었습니다.");
+                    location.href = "index.html";
                 })
-                .catch((error) => {
-                    alert("로그인 정보가 일치하지 않습니다.");
-                });
+                .catch(err => alert("가입 실패: 이미 존재하는 이메일이거나 형식이 잘못되었습니다."));
         };
     </script>
 </body>
