@@ -211,10 +211,20 @@
 
         let userObj = null, isAdmin = false, curBal = 0;
 
-} else {
-    alert("로그인이 필요합니다");
-}
-
+        onAuthStateChanged(auth, async (user) => {
+            if(user) {
+                userObj = user;
+                const snap = await getDoc(doc(db, "users", user.uid));
+                if(snap.exists()) {
+                    const data = snap.data();
+                    isAdmin = data.role === 'admin';
+                    if(isAdmin) document.getElementById('adminBadge').style.display = 'inline';
+                    document.getElementById('userNick').innerText = (data.nickname || "관리자") + "님";
+                    document.getElementById('userInfo').innerText = `이메일: ${user.email} | 닉네임: ${data.nickname || "관리자"}`;
+                    updateAssetDisplay(data.balance);
+                }
+            } else { location.href = "login.html"; }
+        });
 
         function updateAssetDisplay(newBal) {
             const start = curBal;
