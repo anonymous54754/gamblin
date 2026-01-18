@@ -1,125 +1,167 @@
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
-import { getAuth,onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-import { getFirestore,doc,getDoc,updateDoc,increment,arrayUnion,collection,addDoc,getDocs,query,orderBy,deleteDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>SUPER 9 BET (EDU)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-const app = initializeApp({
- apiKey:"AIzaSyDOVJtg5lxJTBP2Vm1mzbuecKu9Rg-I4k4",
- authDomain:"gambling-23339.firebaseapp.com",
- projectId:"gambling-23339"
-});
-const auth=getAuth(app), db=getFirestore(app);
+<style>
+body {
+    margin: 0;
+    background:#0d0d0d;
+    color:#fff;
+    font-family: Arial, sans-serif;
+}
+header {
+    background:#000;
+    padding:15px 20px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+.logo {
+    font-size:22px;
+    font-weight:900;
+}
+.logo span { color:#eebb4d; }
+.balance {
+    background:#eebb4d;
+    color:#000;
+    padding:6px 14px;
+    border-radius:5px;
+    font-weight:bold;
+}
+section { padding:20px; }
 
-let userObj=null, isAdmin=false, curBal=0, soundEnabled=false;
-
-const playSnd=id=>{
- if(!soundEnabled) return;
- const s=document.getElementById(id);
- if(s){ s.currentTime=0; s.play(); }
-};
-
-onAuthStateChanged(auth, async user=>{
- if(!user) return;
- userObj=user;
- const snap=await getDoc(doc(db,"users",user.uid));
- isAdmin = snap.data().role === "admin";
- curBal = snap.data().balance;
- assetVal.innerText = curBal.toLocaleString();
- if(isAdmin) adminBadge.style.display="inline";
- loadCS();
-});
-
-window.toggleSound=()=>{
- soundEnabled=!soundEnabled;
- soundBtn.innerText = soundEnabled ? "🔊 사운드 ON" : "🔇 사운드 OFF";
-};
-
-async function applyResult(bet,mul,game){
- const profit = Math.floor(bet*mul - bet);
- await updateDoc(doc(db,"users",userObj.uid),{
-  balance:increment(profit),
-  history:arrayUnion({game,bet,profit,time:new Date().toISOString()})
- });
- curBal+=profit;
- assetVal.innerText=curBal.toLocaleString();
- playSnd(profit>0?"sndWin":"sndLose");
+.game-grid {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:15px;
+}
+.card {
+    background:#1a1a1a;
+    border-radius:12px;
+    overflow:hidden;
+    cursor:pointer;
+    transition:0.2s;
+}
+.card:hover { transform:scale(1.03); }
+.card img {
+    width:100%;
+    height:120px;
+    object-fit:cover;
+}
+.card div {
+    padding:10px;
+    font-weight:bold;
 }
 
-/* 슬롯 */
-const syms=['🍎','🍊','🍇','🍒','💎','7️⃣'];
-window.playSlot=async()=>{
- const bet=+slotBet.value;
- if(bet<=0||bet>curBal) return alert("머니 부족");
- playSnd("sndSpin");
- reels.innerText="🔄 | 🔄 | 🔄";
- setTimeout(async()=>{
-  const r=[syms[Math.random()*6|0],syms[Math.random()*6|0],syms[Math.random()*6|0]];
-  reels.innerText=r.join(" | ");
-  playSnd("sndSlotResult");
+/* 게임 화면 */
+.view { display:none; }
+.view.active { display:block; }
 
-  let mul=0;
-  if(r.every(v=>v==='7️⃣')) mul=17.7;
-  else if(r.filter(v=>v==='7️⃣').length===2) mul=4;
-  else if(new Set(r).size===2) mul=3;
-
-  await applyResult(bet,mul,"슬롯");
- },1500);
-};
-
-/* 바카라 */
-window.playBac=async pick=>{
- const bet=+bacBet.value;
- if(bet<=0||bet>curBal) return alert("머니 부족");
- playSnd("sndCard");
- const win=['player','banker','tie'][Math.random()*3|0];
- const mul = (pick===win) ? (win==='tie'?9.8:2.8) : 0;
- await applyResult(bet,mul,"바카라");
- alert("결과: "+win.toUpperCase());
-};
-
-/* 달팽이 */
-window.playSnail=async()=>{
- const bet=+snailBet.value;
- const pick=+document.querySelector("[name=snailPick]:checked").value;
- playSnd("sndSnail");
- const win=Math.random()*3|0;
- await applyResult(bet, win===pick?2.8:0, "달팽이");
- alert(`${win+1}번 우승`);
-};
-
-/* 고객센터 */
-window.writeCS=async()=>{
- await addDoc(collection(db,"cs"),{
-  uid:userObj.uid,
-  email:userObj.email,
-  title:csTitle.value,
-  content:csContent.value,
-  secret:csSecret.checked,
-  time:new Date().toISOString()
- });
- loadCS();
-};
-
-async function loadCS(){
- const q=query(collection(db,"cs"),orderBy("time","desc"));
- const snap=await getDocs(q);
- csTableBody.innerHTML=snap.docs.map(d=>{
-  const v=d.data();
-  const can=!v.secret||v.uid===userObj.uid||isAdmin;
-  return `
-  <tr>
-   <td>${v.secret?'🔒':'📢'}</td>
-   <td onclick="alert('${can?v.content:'비밀글'}')">${can?v.title:'비밀글'}</td>
-   <td>${v.email.split('@')[0]}</td>
-   ${isAdmin?`<td><button onclick="delCS('${d.id}')">삭제</button></td>`:''}
-  </tr>`;
- }).join("");
+.track {
+    background:#3b2a21;
+    border-radius:12px;
+    padding:20px;
+    margin-top:20px;
+    position:relative;
+}
+.lane {
+    height:70px;
+    position:relative;
+    margin-bottom:15px;
+}
+.snail {
+    position:absolute;
+    left:0;
+    top:5px;
+    width:60px;
+}
+.finish {
+    position:absolute;
+    right:0;
+    top:0;
+    width:6px;
+    height:100%;
+    background:#f4c542;
 }
 
-window.delCS=async id=>{
- if(confirm("삭제?")){
-  await deleteDoc(doc(db,"cs",id));
-  loadCS();
- }
-};
-</script>
+button {
+    width:100%;
+    padding:15px;
+    font-size:18px;
+    background:#eebb4d;
+    border:none;
+    border-radius:8px;
+    font-weight:bold;
+    cursor:pointer;
+}
+button:active { transform:scale(0.97); }
+
+.back {
+    margin-top:15px;
+    background:#333;
+    color:#fff;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <div class="logo">SUPER <span>9</span> BET</div>
+    <div class="balance">₩ <span id="assetVal">1,000,000</span></div>
+</header>
+
+<!-- 로비 -->
+<section id="lobby" class="view active">
+    <h3>CASINO GAMES</h3>
+    <div class="game-grid">
+        <div class="card" onclick="show('snail')">
+            <img src="https://images.unsplash.com/photo-1501706362039-c6e80973b293?auto=format&fit=crop&w=800&q=80">
+            <div>스피드 달팽이</div>
+        </div>
+        <div class="card" onclick="show('slot')">
+            <img src="https://images.unsplash.com/photo-1601370690183-1c7796ecec61?auto=format&fit=crop&w=800&q=80">
+            <div>777 슬롯</div>
+        </div>
+    </div>
+</section>
+
+<!-- 달팽이 게임 -->
+<section id="snail" class="view">
+    <h2>🐌 REAL SNAIL RACING</h2>
+
+    <div class="track">
+        <div class="lane">
+            <img class="snail" id="s1" src="https://upload.wikimedia.org/wikipedia/commons/3/3a/Garden_snail.jpg">
+            <div class="finish"></div>
+        </div>
+        <div class="lane">
+            <img class="snail" id="s2" src="https://upload.wikimedia.org/wikipedia/commons/3/3a/Garden_snail.jpg">
+            <div class="finish"></div>
+        </div>
+        <div class="lane">
+            <img class="snail" id="s3" src="https://upload.wikimedia.org/wikipedia/commons/3/3a/Garden_snail.jpg">
+            <div class="finish"></div>
+        </div>
+    </div>
+
+    <button onclick="startRace()">레이스 시작</button>
+    <button class="back" onclick="show('lobby')">← 돌아가기</button>
+</section>
+
+<!-- 슬롯 -->
+<section id="slot" class="view">
+    <h2>🎰 777 SLOT</h2>
+    <div style="font-size:50px;text-align:center;margin:30px" id="slotVal">
+        🍒 | 🍒 | 🍒
+    </div>
+    <button onclick="spin()">SPIN</button>
+    <button class="back" onclick="show('lobby')">← 돌아가기</button>
+</section>
+
+<script>
+let balance = 1000000;
+const assetVal = document.get
