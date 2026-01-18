@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GOLDEN ROYAL CASINO</title>
-    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Roboto:wght@300;900&display=swap" rel="stylesheet">
+    <title>GOLDEN ROYAL : PRESTIGE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Noto+Sans+KR:wght@300;700&display=swap" rel="stylesheet">
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
@@ -28,44 +28,67 @@
         let userDoc = null;
         let userData = { balance: 0, nickname: "", role: "user", history: [] };
 
-        window.showView = async (viewId) => {
-            if (viewId === 'baccaratGame' && document.getElementById('baccaratGame').style.display === 'none') {
-                if (!confirm("주의: 실제 카지노 규칙이 적용됩니다. 입장하시겠습니까?")) return;
+        // --- 핵심: 전역 관리자 기능 (수정 완료) ---
+        window.adminPanel = async () => {
+            if (userData.role !== 'admin') {
+                alert("권한이 없습니다.");
+                return;
+            }
+            const targetUid = prompt("포인트를 조절할 사용자의 UID를 입력하세요:");
+            if (!targetUid) return;
+            
+            const amount = parseInt(prompt("가감할 포인트 금액을 입력하세요 (예: 100000 또는 -50000):"));
+            if (isNaN(amount)) {
+                alert("숫자만 입력 가능합니다.");
+                return;
+            }
+
+            try {
+                const targetRef = doc(db, "users", targetUid);
+                await updateDoc(targetRef, { balance: increment(amount) });
+                alert("성공적으로 반영되었습니다.");
+                // 내 계정 수정 시 데이터 갱신
+                if(targetUid === auth.currentUser.uid) refreshData();
+            } catch (e) {
+                alert("오류 발생: UID가 정확한지 확인하세요.\n" + e.message);
+            }
+        };
+
+        async function refreshData() {
+            const snap = await getDoc(userDoc);
+            userData = snap.data();
+            updateUI();
+        }
+
+        window.showView = async (vId) => {
+            if (vId === 'baccaratGame') {
+                if(!confirm("♣️ VIP BACCARAT ♣️\n\n최대 배팅 제한 없음.\n입장하시겠습니까?")) return;
             }
             document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
-            document.getElementById(viewId).style.display = 'block';
-            if (userDoc) {
-                const snap = await getDoc(userDoc);
-                userData = snap.data();
-                updateUI();
-            }
-            if (viewId === 'snailGame') drawSnailRace();
+            document.getElementById(vId).style.display = 'block';
+            if (userDoc) refreshData();
+            if (vId === 'snailGame') startSnailDrawLoop();
         };
 
         function updateUI() {
             document.querySelectorAll('.balance-txt').forEach(el => el.innerText = (userData.balance || 0).toLocaleString());
-            if(document.getElementById('lobby-nick')) document.getElementById('lobby-nick').innerText = userData.nickname;
-            
             const historyBody = document.getElementById('historyBody');
             if (historyBody && userData.history) {
-                historyBody.innerHTML = userData.history.slice().reverse().map(h => `
+                historyBody.innerHTML = userData.history.slice().reverse().slice(0, 10).map(h => `
                     <tr>
-                        <td>${h.game.toUpperCase()}</td>
-                        <td>${h.bet}</td>
-                        <td>${h.result}</td>
+                        <td style="color:#888; font-size:10px;">${h.game.toUpperCase()}</td>
+                        <td style="font-weight:700;">${h.bet}</td>
                         <td class="${h.profit >= 0 ? 'plus' : 'minus'}">${h.profit >= 0 ? '+' : ''}${h.profit.toLocaleString()}</td>
                     </tr>
                 `).join('');
             }
-            if(userData.role === 'admin') document.getElementById('admin-btn').style.display = 'block';
+            document.getElementById('admin-btn').style.display = (userData.role === 'admin') ? 'block' : 'none';
         }
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 userDoc = doc(db, "users", user.uid);
-                const snap = await getDoc(userDoc);
-                userData = snap.data();
-                updateUI();
+                await refreshData();
                 showView('lobby');
             } else {
                 showView('login');
@@ -79,92 +102,95 @@
             try {
                 if (mode === 'signup') {
                     const res = await createUserWithEmailAndPassword(auth, email, pw);
-                    await setDoc(doc(db, "users", res.user.uid), { nickname: nick || "USER", balance: 100000, role: "user", history: [] });
+                    await setDoc(doc(db, "users", res.user.uid), { nickname: nick || "VIP", balance: 100000, role: "user", history: [] });
                 } else {
                     await signInWithEmailAndPassword(auth, email, pw);
                 }
-            } catch (e) { alert("Access Denied: " + e.message); }
+            } catch (e) { alert("ERROR: " + e.message); }
         };
 
-        async function updatePoints(profit, gameType, betInfo, resultInfo) {
+        async function commitGame(profit, game, bet, res) {
             await updateDoc(userDoc, {
                 balance: increment(profit),
-                history: arrayUnion({
-                    game: gameType,
-                    bet: betInfo,
-                    result: resultInfo,
-                    profit: profit,
-                    time: new Date().toISOString()
-                })
+                history: arrayUnion({ game, bet, result: res, profit, time: new Date().toISOString() })
             });
-            const snap = await getDoc(userDoc);
-            userData = snap.data();
-            updateUI();
+            refreshData();
         }
 
-        // --- SNAIL RACE (Professional Version) ---
-        let isRacing = false;
-        function drawSnailRace(positions = [60, 60, 60]) {
+        // --- SNAIL RACE: HIGH-END GRAPHICS ---
+        let snailAnim = null;
+        let snailPositions = [80, 80, 80];
+        function startSnailDrawLoop() {
             const canvas = document.getElementById('snailCanvas');
             const ctx = canvas.getContext('2d');
-            ctx.clearRect(0,0,800,400);
-            
-            // Track Grid
-            ctx.strokeStyle = "#333";
-            for(let i=0; i<4; i++) {
-                ctx.beginPath(); ctx.moveTo(0, i*100); ctx.lineTo(800, i*100); ctx.stroke();
-            }
-
-            // Finish Line Neon
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = "#ff0000";
-            ctx.fillStyle = "#ff0000";
-            ctx.fillRect(740, 0, 10, 400);
-            ctx.shadowBlur = 0;
-
-            const colors = ["#FFD700", "#C0C0C0", "#CD7F32"]; // Gold, Silver, Bronze
-            for(let i=0; i<3; i++) {
-                const y = 50 + i*100;
-                // Racer Body
+            function render() {
+                ctx.clearRect(0,0,800,400);
+                // 트랙 배경
                 ctx.fillStyle = "#111";
-                ctx.fillRect(positions[i]-40, y-20, 80, 40);
-                ctx.strokeStyle = colors[i];
-                ctx.lineWidth = 3;
-                ctx.strokeRect(positions[i]-40, y-20, 80, 40);
-                
-                ctx.fillStyle = colors[i];
-                ctx.font = "bold 16px Oswald";
-                ctx.fillText(`NO.${i+1} RACER`, positions[i]-35, y+5);
+                ctx.fillRect(0,0,800,400);
+                for(let i=0; i<4; i++) {
+                    ctx.strokeStyle = "#222";
+                    ctx.beginPath(); ctx.moveTo(0, i*100); ctx.lineTo(800, i*100); ctx.stroke();
+                }
+                // 결승선 네온 이펙트
+                ctx.shadowBlur = 20; ctx.shadowColor = "#ffcd3c";
+                ctx.fillStyle = "#ffcd3c";
+                ctx.fillRect(720, 0, 5, 400);
+                ctx.shadowBlur = 0;
+
+                const colors = ["#ff3e3e", "#3eafff", "#3eff8b"];
+                const names = ["MARS", "NEPTUNE", "VENUS"];
+                for(let i=0; i<3; i++) {
+                    const y = 50 + i*100;
+                    // 레이서 본체 (그라데이션)
+                    let grad = ctx.createLinearGradient(snailPositions[i]-50, 0, snailPositions[i]+20, 0);
+                    grad.addColorStop(0, "transparent");
+                    grad.addColorStop(1, colors[i]);
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(snailPositions[i]-60, y-15, 60, 30);
+                    // 레이서 헤드
+                    ctx.fillStyle = "#fff";
+                    ctx.font = "bold 14px Oswald";
+                    ctx.fillText(names[i], snailPositions[i]-50, y+5);
+                }
+                snailAnim = requestAnimationFrame(render);
             }
+            render();
         }
 
         window.startSnailRace = async () => {
             const bet = parseInt(document.getElementById('snail-bet').value);
-            if(isRacing || bet > userData.balance || bet <= 0) return;
-            isRacing = true;
-            document.getElementById('snail-start-btn').disabled = true;
-            await updatePoints(-bet, 'snail', 'BETTING', 'RACING...');
-
-            let positions = [60, 60, 60];
-            let winner = null;
-            while(!winner) {
-                for(let i=0; i<3; i++) {
-                    positions[i] += Math.random() * 9 + 3;
-                    if(positions[i] >= 740) { winner = i; break; }
-                }
-                drawSnailRace(positions);
-                await new Promise(r => setTimeout(r, 30));
-            }
-
+            if(bet > userData.balance || bet <= 0) return;
             const selected = parseInt(document.querySelector('input[name="snail"]:checked').value);
-            let profit = (selected === winner) ? Math.floor(bet * 2.8) : 0;
-            await updatePoints(profit, 'snail', `SELECT NO.${selected+1}`, `WINNER NO.${winner+1}`);
-            isRacing = false;
-            document.getElementById('snail-start-btn').disabled = false;
-            alert(`RACER NO.${winner+1} WIN!`);
+            
+            document.getElementById('snail-start-btn').disabled = true;
+            await commitGame(-bet, 'snail', 'RACING', 'PENDING');
+
+            let winner = null;
+            const raceInterval = setInterval(() => {
+                for(let i=0; i<3; i++) {
+                    snailPositions[i] += Math.random() * 7 + 2;
+                    if(snailPositions[i] >= 720) {
+                        winner = i;
+                        clearInterval(raceInterval);
+                        cancelAnimationFrame(snailAnim);
+                        finalizeSnail(winner, selected, bet);
+                        break;
+                    }
+                }
+            }, 30);
         };
 
-        // --- BACCARAT (VIP Version) ---
+        async function finalizeSnail(winner, selected, bet) {
+            let profit = (winner === selected) ? Math.floor(bet * 2.8) : 0;
+            alert(`WINNER: NO.${winner+1}`);
+            await commitGame(profit, 'snail', `NO.${selected+1}`, `WIN NO.${winner+1}`);
+            snailPositions = [80, 80, 80];
+            document.getElementById('snail-start-btn').disabled = false;
+            startSnailDrawLoop();
+        }
+
+        // --- BACCARAT: LUXURY CARD ANIMATION ---
         window.playBaccarat = async (pick) => {
             const bet = parseInt(document.getElementById('bac-bet').value);
             if(bet > userData.balance || bet <= 0) return;
@@ -172,151 +198,150 @@
             document.getElementById('p-cards').innerHTML = '';
             document.getElementById('b-cards').innerHTML = '';
             document.querySelectorAll('.bac-btns button').forEach(b => b.disabled = true);
-            await updatePoints(-bet, 'baccarat', pick.toUpperCase(), 'DEALING...');
+            await commitGame(-bet, 'baccarat', pick.toUpperCase(), 'DEALING');
 
-            const p1 = Math.floor(Math.random() * 10);
-            const p2 = Math.floor(Math.random() * 10);
-            const b1 = Math.floor(Math.random() * 10);
-            const b2 = Math.floor(Math.random() * 10);
+            const p1 = Math.floor(Math.random() * 9) + 1;
+            const p2 = Math.floor(Math.random() * 9) + 1;
+            const b1 = Math.floor(Math.random() * 9) + 1;
+            const b2 = Math.floor(Math.random() * 9) + 1;
 
-            const addCard = (id, val) => {
-                const div = document.createElement('div');
-                div.className = 'card-obj';
-                div.innerHTML = `<span>${val === 0 ? '10' : val}</span>`;
-                document.getElementById(id).appendChild(div);
+            const deal = async (id, val) => {
+                const card = document.createElement('div');
+                card.className = 'card-obj';
+                card.innerHTML = `<span>${val}</span>`;
+                document.getElementById(id).appendChild(card);
+                await new Promise(r => setTimeout(r, 600));
             };
 
-            await new Promise(r => setTimeout(r, 600)); addCard('p-cards', p1);
-            await new Promise(r => setTimeout(r, 600)); addCard('b-cards', b1);
-            await new Promise(r => setTimeout(r, 600)); addCard('p-cards', p2);
-            await new Promise(r => setTimeout(r, 600)); addCard('b-cards', b2);
+            await deal('p-cards', p1); await deal('b-cards', b1);
+            await deal('p-cards', p2); await deal('b-cards', b2);
 
-            const pScore = (p1+p2)%10;
-            const bScore = (b1+b2)%10;
+            const pScore = (p1+p2)%10; const bScore = (b1+b2)%10;
             const result = pScore > bScore ? 'player' : (bScore > pScore ? 'banker' : 'tie');
             
             let profit = (pick === result) ? (result === 'tie' ? bet * 8 : bet * 2) : 0;
-            await updatePoints(profit, 'baccarat', pick.toUpperCase(), `P:${pScore} B:${bScore}`);
+            await commitGame(profit, 'baccarat', pick.toUpperCase(), `P:${pScore} B:${bScore}`);
             document.querySelectorAll('.bac-btns button').forEach(b => b.disabled = false);
-            alert(`RESULT: ${result.toUpperCase()} (P:${pScore} B:${bScore})`);
+            alert(`[ ${result.toUpperCase()} WIN ]\nPLAYER: ${pScore} / BANKER: ${bScore}`);
         };
 
         window.allIn = (id) => { document.getElementById(id).value = userData.balance; };
+
     </script>
-
     <style>
-        :root { --gold: #d4af37; --dark: #0a0a0a; --accent: #ff0000; }
-        body { background: var(--dark); color: #fff; font-family: 'Roboto', sans-serif; margin: 0; overflow-x: hidden; }
-        .view { display: none; animation: fadeIn 0.5s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        /* Login Design */
-        .login-box { width: 350px; margin: 100px auto; background: #111; padding: 40px; border: 1px solid var(--gold); box-shadow: 0 0 20px rgba(212, 175, 55, 0.2); }
-        h2 { font-family: 'Oswald', sans-serif; color: var(--gold); letter-spacing: 2px; text-transform: uppercase; }
-
-        /* Lobby Design */
-        .top-bar { background: #000; border-bottom: 2px solid var(--gold); padding: 15px 50px; display: flex; justify-content: space-between; align-items: center; }
-        .balance-box { border: 1px solid var(--gold); padding: 5px 20px; font-weight: 900; color: var(--gold); font-size: 20px; }
+        :root { --gold: #c3a469; --dark: #070707; --surface: #121212; --win: #00ff88; --loss: #ff3c3c; }
+        body { background: var(--dark); color: #fff; font-family: 'Noto Sans KR', sans-serif; margin: 0; }
         
-        .game-grid { display: flex; justify-content: center; gap: 30px; margin-top: 50px; }
-        .game-card { width: 300px; height: 400px; border: 1px solid #333; transition: 0.3s; cursor: pointer; position: relative; overflow: hidden; }
-        .game-card:hover { border-color: var(--gold); transform: translateY(-10px); box-shadow: 0 10px 30px rgba(212, 175, 55, 0.3); }
-        .game-card.snail { background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=400&q=80'); background-size: cover; }
-        .game-card.baccarat { background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1596838132731-3301c3fd4317?auto=format&fit=crop&w=400&q=80'); background-size: cover; }
-        .game-card h3 { position: absolute; bottom: 20px; width: 100%; text-align: center; font-size: 28px; font-family: 'Oswald'; }
+        /* Premium Header */
+        .header { background: #000; border-bottom: 1px solid #222; padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; position: sticky; top:0; z-index: 100; }
+        .logo { font-family: 'Oswald'; font-size: 26px; letter-spacing: 4px; color: var(--gold); }
+        .credit-display { font-family: 'Oswald'; color: var(--gold); font-size: 22px; background: rgba(195,164,105,0.1); padding: 5px 20px; border-radius: 50px; border: 1px solid var(--gold); }
 
-        /* Common Elements */
-        input { background: #222; border: 1px solid #444; color: #fff; padding: 10px; margin: 5px; width: 80%; }
-        button { background: var(--gold); border: none; color: #000; padding: 12px 25px; font-weight: 900; cursor: pointer; text-transform: uppercase; transition: 0.2s; }
-        button:hover { background: #fff; }
-        .all-in-btn { background: var(--accent); color: #fff; font-size: 11px; padding: 5px 10px; margin-left: -70px; }
+        /* Elegant View Container */
+        .view { display: none; padding: 40px; animation: slideUp 0.6s ease-out; }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        /* Table Design */
-        table { width: 90%; margin: 30px auto; border-collapse: collapse; background: #111; border: 1px solid #333; }
-        th { background: var(--gold); color: #000; padding: 10px; font-family: 'Oswald'; }
-        td { padding: 12px; border-bottom: 1px solid #222; font-size: 13px; }
-        .plus { color: #00ff00; font-weight: bold; }
-        .minus { color: var(--accent); }
+        /* Lobby Cards */
+        .lobby-grid { display: flex; justify-content: center; gap: 40px; margin-top: 50px; }
+        .game-selector { width: 350px; height: 500px; border: 1px solid #222; background-size: cover; background-position: center; position: relative; cursor: pointer; transition: 0.4s; }
+        .game-selector:hover { transform: scale(1.03); border-color: var(--gold); box-shadow: 0 0 50px rgba(195,164,105,0.2); }
+        .game-selector .label { position: absolute; bottom: 0; width: 100%; background: linear-gradient(transparent, #000); padding: 40px 0; text-align: center; font-family: 'Oswald'; font-size: 32px; }
 
         /* Baccarat UI */
-        .bac-table { display: flex; justify-content: center; gap: 50px; margin: 30px; }
-        .bac-zone { background: #073b1c; border: 3px solid #0d5c2c; width: 200px; height: 150px; border-radius: 100px 100px 20px 20px; padding: 20px; position: relative; }
-        .card-obj { width: 50px; height: 75px; background: #fff; color: #000; display: inline-block; margin: 5px; border-radius: 5px; font-weight: 900; line-height: 75px; font-size: 24px; box-shadow: 0 5px 10px rgba(0,0,0,0.5); animation: cardIn 0.5s ease-out; }
-        @keyframes cardIn { from { transform: translateY(-100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .bacc-container { display: flex; justify-content: center; gap: 60px; margin: 50px 0; }
+        .bet-zone { width: 220px; height: 180px; background: radial-gradient(circle, #1a4d2e, #0a2d1a); border: 2px solid #2d6a4f; border-radius: 110px 110px 10px 10px; padding: 30px; }
+        .card-obj { width: 60px; height: 90px; background: #fff; color: #000; display: inline-block; margin: 5px; border-radius: 6px; font-weight: 900; line-height: 90px; font-size: 28px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); transform-origin: center; animation: deal 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes deal { from { transform: translateY(-200px) rotate(45deg); opacity: 0; } to { transform: translateY(0) rotate(0); opacity: 1; } }
+
+        /* Admin/Global Button */
+        button { background: var(--gold); color: #000; border: none; padding: 12px 30px; font-family: 'Oswald'; font-weight: 700; cursor: pointer; text-transform: uppercase; border-radius: 3px; }
+        button:hover { background: #fff; }
+        input { background: #111; border: 1px solid #333; color: #fff; padding: 12px; font-size: 16px; margin: 10px 0; }
+        .all-in-mini { background: #ff3c3c; color: #fff; font-size: 10px; padding: 4px 8px; vertical-align: middle; }
+
+        /* History Table */
+        table { width: 100%; max-width: 900px; margin: 40px auto; border-collapse: collapse; }
+        th { border-bottom: 2px solid var(--gold); padding: 15px; font-family: 'Oswald'; color: var(--gold); text-align: left; }
+        td { padding: 15px; border-bottom: 1px solid #1a1a1a; }
+        .plus { color: var(--win); } .minus { color: var(--loss); }
+
+        /* Auth Box */
+        .auth-card { width: 400px; margin: 100px auto; padding: 50px; background: var(--surface); border: 1px solid #222; border-top: 4px solid var(--gold); }
     </style>
 </head>
 <body>
 
     <div id="login" class="view">
-        <div class="login-box">
-            <h2>MEMBER ACCESS</h2>
-            <input type="email" id="email" placeholder="EMAIL ADDRESS">
-            <input type="password" id="pw" placeholder="PASSWORD">
-            <input type="text" id="nickname" placeholder="NICKNAME (NEW ACCOUNT)">
-            <button onclick="handleAuth('login')" style="width: 100%; margin-top: 20px;">LOGIN</button>
-            <button onclick="handleAuth('signup')" style="width: 100%; margin-top: 10px; background: #444; color: #fff;">REGISTER</button>
+        <div class="auth-card">
+            <div class="logo" style="margin-bottom:30px; text-align:center;">PRESTIGE LOGIN</div>
+            <input type="email" id="email" placeholder="E-MAIL" style="width:100%;">
+            <input type="password" id="pw" placeholder="PASSWORD" style="width:100%;">
+            <input type="text" id="nickname" placeholder="NICKNAME (FOR SIGNUP)" style="width:100%;">
+            <button onclick="handleAuth('login')" style="width:100%; margin-top:20px;">ENTER</button>
+            <button onclick="handleAuth('signup')" style="width:100%; margin-top:10px; background:#222; color:#888;">REGISTER</button>
         </div>
     </div>
 
     <div id="lobby" class="view">
-        <div class="top-bar">
-            <div style="font-family: 'Oswald'; font-size: 24px; color: var(--gold);">GOLDEN ROYAL</div>
-            <div class="balance-box">CREDIT: <span class="balance-txt">0</span></div>
-            <button onclick="signOut(auth)" style="background:none; color:#666; font-size:12px;">LOGOUT</button>
+        <div class="header">
+            <div class="logo">GOLDEN ROYAL</div>
+            <div class="credit-display">CREDIT: <span class="balance-txt">0</span></div>
+            <button id="admin-btn" onclick="adminPanel()" style="display:none; background:#ffcd3c;">ADMIN</button>
         </div>
         
-        <div class="game-grid">
-            <div class="game-card snail" onclick="showView('snailGame')"><h3>SNAIL RACE</h3></div>
-            <div class="game-card baccarat" onclick="showView('baccaratGame')"><h3>VIP BACCARAT</h3></div>
+        <div class="lobby-grid">
+            <div class="game-selector" style="background-image: url('https://images.unsplash.com/photo-1511193311914-0346f16efe90?auto=format&fit=crop&w=400&q=80');" onclick="showView('snailGame')">
+                <div class="label">NEON SNAIL RACE</div>
+            </div>
+            <div class="game-selector" style="background-image: url('https://images.unsplash.com/photo-1518133835878-5a93cc3f89e5?auto=format&fit=crop&w=400&q=80');" onclick="showView('baccaratGame')">
+                <div class="label">VIP BACCARAT</div>
+            </div>
         </div>
 
         <table>
-            <thead><tr><th>GAME</th><th>BET INFO</th><th>RESULT</th><th>PROFIT</th></tr></thead>
+            <thead><tr><th>GAME</th><th>BET</th><th>PROFIT</th></tr></thead>
             <tbody id="historyBody"></tbody>
         </table>
-        <button id="admin-btn" onclick="alert('CONSOLE UID ADMIN ONLY')" style="display:none; margin: 20px auto;">ADMIN PANEL</button>
     </div>
 
     <div id="snailGame" class="view">
-        <div class="top-bar">
-            <button onclick="showView('lobby')">BACK TO LOBBY</button>
-            <div class="balance-box">CREDIT: <span class="balance-txt"></span></div>
+        <div class="header">
+            <button onclick="showView('lobby')">EXIT</button>
+            <div class="credit-display"><span class="balance-txt"></span></div>
         </div>
         <canvas id="snailCanvas" width="800" height="400"></canvas>
-        <div style="margin-top: 20px;">
-            <input type="radio" name="snail" value="0" checked> NO.1 |
-            <input type="radio" name="snail" value="1"> NO.2 |
-            <input type="radio" name="snail" value="2"> NO.3
-            <br><br>
-            <input type="number" id="snail-bet" value="10000" style="width: 200px;">
-            <button class="all-in-btn" onclick="allIn('snail-bet')">ALL-IN</button>
-            <button id="snail-start-btn" onclick="startSnailRace()">START RACE</button>
+        <div style="text-align:center; margin-top:20px;">
+            <input type="radio" name="snail" value="0" checked> NO.1 MARS | 
+            <input type="radio" name="snail" value="1"> NO.2 NEPTUNE | 
+            <input type="radio" name="snail" value="2"> NO.3 VENUS
+            <br>
+            <input type="number" id="snail-bet" value="10000" style="width:200px;">
+            <button class="all-in-mini" onclick="allIn('snail-bet')">MAX</button>
+            <button id="snail-start-btn" onclick="startSnailRace()">PLACE BET & START</button>
         </div>
     </div>
 
     <div id="baccaratGame" class="view">
-        <div class="top-bar">
-            <button onclick="showView('lobby')">BACK TO LOBBY</button>
-            <div class="balance-box">CREDIT: <span class="balance-txt"></span></div>
+        <div class="header">
+            <button onclick="showView('lobby')">EXIT</button>
+            <div class="credit-display"><span class="balance-txt"></span></div>
         </div>
-        
-        <div class="bac-table">
-            <div class="bac-zone">
-                <div style="color: #fff; font-family: 'Oswald'; margin-bottom: 10px;">PLAYER</div>
+        <div class="bacc-container">
+            <div class="bet-zone">
+                <div style="font-family:'Oswald'; letter-spacing:2px; margin-bottom:20px;">PLAYER</div>
                 <div id="p-cards"></div>
             </div>
-            <div class="bac-zone" style="background: #500a0a; border-color: #7a1212;">
-                <div style="color: #fff; font-family: 'Oswald'; margin-bottom: 10px;">BANKER</div>
+            <div class="bet-zone" style="background: radial-gradient(circle, #4d1a1a, #2d0a0a); border-color: #6a2d2d;">
+                <div style="font-family:'Oswald'; letter-spacing:2px; margin-bottom:20px;">BANKER</div>
                 <div id="b-cards"></div>
             </div>
         </div>
-
-        <div class="bac-btns">
-            <input type="number" id="bac-bet" value="10000" style="width: 200px;">
-            <button class="all-in-btn" onclick="allIn('bac-bet')">ALL-IN</button><br><br>
-            <button onclick="playBaccarat('player')" style="width:120px;">PLAYER</button>
-            <button onclick="playBaccarat('tie')" style="background:#5b2c91; color:#fff; width:120px;">TIE</button>
-            <button onclick="playBaccarat('banker')" style="background:#a91d1d; color:#fff; width:120px;">BANKER</button>
+        <div class="bac-btns" style="text-align:center;">
+            <input type="number" id="bac-bet" value="10000" style="width:200px;">
+            <button class="all-in-mini" onclick="allIn('bac-bet')">MAX</button><br><br>
+            <button onclick="playBaccarat('player')" style="width:150px;">PLAYER (x2)</button>
+            <button onclick="playBaccarat('tie')" style="background:#5b2c91; width:150px; color:#fff;">TIE (x8)</button>
+            <button onclick="playBaccarat('banker')" style="background:#8c1c1c; width:150px; color:#fff;">BANKER (x2)</button>
         </div>
     </div>
 
