@@ -40,6 +40,11 @@
 
         .content { flex: 1; padding: 30px; overflow-y: auto; background: #111; position: relative; }
 
+        /* [추가된 부분] 게임 룰 박스 스타일 */
+        .rule-box { margin: 10px; padding: 15px; background: #1a1a1a; border: 1px solid #333; border-radius: 8px; font-size: 12px; color: #aaa; line-height: 1.6; }
+        .rule-box h4 { color: gold; margin-top: 0; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        .rule-box b { color: #fff; }
+
         /* 광고 디자인 */
         .side-ad { margin-top: auto; padding: 10px; }
         .mini-ad { background: #ff5252; color: #fff; padding: 8px; margin-bottom: 5px; border-radius: 5px; font-size: 12px; text-align: center; font-weight: 900; animation: neon-flash 0.5s infinite alternate; }
@@ -91,6 +96,13 @@
             <div id="m-bacView" class="menu-item" onclick="showView('bacView')">바카라</div>
             <div id="m-snailView" class="menu-item" onclick="showView('snailView')">달팽이 레이스</div>
             
+            <div class="rule-box">
+                <h4>📜 Game Rules</h4>
+                • <b>777슬롯:</b> 777 당첨 시 17.7배 보상!<br>
+                • <b>바카라:</b> 플레이어(2.5배), 뱅커(2.5배), 타이(9배)<br>
+                • <b>달팽이:</b> 1~3번 중 우승 달팽이 예측 (2.8배)
+            </div>
+
             <div class="side-ad">
                 <div class="mini-ad" style="background: #00ff00; color: #000;">💸 단독 무사고 안전 놀이터 💸</div>
                 <div class="mini-ad" style="background: #ff00ff;">💎 고배당 잭팟 💎</div>
