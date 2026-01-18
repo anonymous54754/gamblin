@@ -2,19 +2,28 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=1280">
     <title> SUPER 000 BET CASINO | MANAGEMENT</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root { --point-gold: #eebb4d; --bg-dark: #0a0a0a; --panel-bg: #151515; --neon-red: #ff0000; --neon-yellow: #ffff00; }
-        body { background-color: var(--bg-dark); color: #eee; font-family: 'Noto Sans KR', sans-serif; margin: 0; overflow: hidden; }
+        
+        /* [수정 포인트] 모바일에서 화면이 잘리지 않도록 body와 wrapper에 최소 너비 지정 */
+        body { 
+            background-color: var(--bg-dark); 
+            color: #eee; 
+            font-family: 'Noto Sans KR', sans-serif; 
+            margin: 0; 
+            overflow-x: auto; /* 가로 스크롤 허용 */
+            min-width: 1280px; 
+        }
 
         /* 결과 팝업 */
         #resultPopup { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10000; 
                        background: #000; border: 3px solid var(--point-gold); padding: 40px; border-radius: 20px; text-align: center; box-shadow: 0 0 50px gold; min-width: 300px; }
 
         /* 상단 네비게이션 */
-        .top-nav { background: linear-gradient(180deg, #1b5e20, #0a2e10); height: 70px; display: flex; justify-content: space-between; align-items: center; padding: 0 30px; border-bottom: 2px solid #222; position: relative; z-index: 1000; }
+        .top-nav { background: linear-gradient(180deg, #1b5e20, #0a2e10); height: 70px; display: flex; justify-content: space-between; align-items: center; padding: 0 30px; border-bottom: 2px solid #222; position: relative; z-index: 1000; min-width: 1280px; box-sizing: border-box; }
         .logo { font-size: 26px; font-weight: 900; color: #fff; cursor: pointer; font-style: italic; text-shadow: 2px 2px 4px #000; }
         .nav-right { display: flex; align-items: center; gap: 20px; }
         .asset-box { background: #000; padding: 8px 15px; border-radius: 5px; border: 1px solid gold; color: gold; font-weight: 900; font-size: 20px; min-width: 140px; text-align: right; box-shadow: inset 0 0 10px rgba(255,215,0,0.3); }
@@ -30,8 +39,8 @@
         .banner-text { position: absolute; white-space: nowrap; font-size: 26px; font-weight: 900; color: #fff; animation: marquee 12s linear infinite; }
 
         /* 메인 레이아웃 */
-        .main-wrapper { display: flex; height: calc(100vh - 70px); }
-        .sidebar { width: 220px; background: #0d0d0d; border-right: 1px solid #222; display: flex; flex-direction: column; }
+        .main-wrapper { display: flex; height: calc(100vh - 70px); min-width: 1280px; }
+        .sidebar { width: 220px; background: #0d0d0d; border-right: 1px solid #222; display: flex; flex-direction: column; flex-shrink: 0; }
         
         /* 메뉴 활성화 스타일 */
         .menu-item { padding: 25px 20px; cursor: pointer; color: #888; font-weight: 700; border-left: 5px solid transparent; transition: all 0.2s; font-size: 16px; }
@@ -40,20 +49,17 @@
 
         .content { flex: 1; padding: 30px; overflow-y: auto; background: #111; position: relative; }
 
-        /* [수정된 부분] 게임 룰 박스 스타일 - 높이를 늘리고 스크롤 가능하게 변경 */
         .rule-box { margin: 10px; padding: 15px; background: #1a1a1a; border: 1px solid #333; border-radius: 8px; font-size: 12px; color: #aaa; line-height: 1.8; min-height: 200px; max-height: 300px; overflow-y: auto; }
         .rule-box h4 { color: gold; margin-top: 0; margin-bottom: 12px; border-bottom: 1px solid #444; padding-bottom: 5px; font-size: 14px; text-align: center; }
         .rule-box b { color: #fff; display: block; margin-top: 8px; }
         .rule-box span { color: #eebb4d; }
 
-        /* 광고 디자인 */
         .side-ad { margin-top: auto; padding: 10px; }
         .mini-ad { background: #ff5252; color: #fff; padding: 8px; margin-bottom: 5px; border-radius: 5px; font-size: 12px; text-align: center; font-weight: 900; animation: neon-flash 0.5s infinite alternate; }
 
         .game-panel { background: var(--panel-bg); border-radius: 15px; padding: 30px; text-align: center; border: 1px solid #333; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .btn-play { background: linear-gradient(to bottom, #ffd700, #b8860b); color: #000; border: none; padding: 12px 30px; font-weight: 900; border-radius: 5px; cursor: pointer; box-shadow: 0 4px 0 #7b6500; }
         
-        /* 테이블/리스트 스타일 */
         .bac-table { background: radial-gradient(circle, #2e7d32, #1b5e20); border: 8px solid #3e2723; border-radius: 100px; padding: 30px; display: flex; justify-content: center; gap: 40px; margin: 20px 0; }
         .card-slot { width: 80px; height: 110px; background: rgba(0,0,0,0.3); border-radius: 5px; display: inline-block; }
         .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s; transform-style: preserve-3d; }
@@ -63,7 +69,6 @@
 
         .cs-list { width: 100%; border-collapse: collapse; margin-top: 15px; }
         .cs-list th, .cs-list td { border-bottom: 1px solid #333; padding: 12px; text-align: center; }
-        .reply-box { background: #222; padding: 10px; margin-top: 5px; border-left: 3px solid gold; font-size: 13px; text-align: left; }
 
         .view { display: none; }
         .active-view { display: block; }
@@ -247,7 +252,6 @@
             await addDoc(collection(db, "history"), { uid: userObj.uid, game: gameName, bet: bet, profit: profit, time: new Date() });
         }
 
-        /* 게임 로직 (배당률 수정본 유지) */
         const emojis = ['7️⃣', '🍒', '💎', '🍋', '🍇'];
         window.playSlot = async () => {
             const bet = parseInt(document.getElementById('slotBet').value);
@@ -321,7 +325,6 @@
             }, 30);
         };
 
-        /* 고객센터/마이페이지 로직 [완전 복구] */
         window.writeCS = async () => {
             const t = document.getElementById('csTitle').value, c = document.getElementById('csContent').value, s = document.getElementById('csSecret').checked;
             if(!t || !c) return;
@@ -364,7 +367,6 @@
             }).join('') || "내역이 없습니다.";
         }
 
-        /* 뷰 전환 */
         window.showView = (v) => {
             document.querySelectorAll('.view').forEach(e => e.classList.remove('active-view'));
             document.querySelectorAll('.menu-item').forEach(e => e.classList.remove('menu-active'));
