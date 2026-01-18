@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gambling Prevention Portal</title>
+    <title>Gambling Prevention Portal v3.0</title>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
@@ -11,211 +11,320 @@
 
         // 🔥 본인의 Firebase 설정값을 여기에 붙여넣으세요!
         const firebaseConfig = {
-  apiKey: "AIzaSyDOVJtg5lxJTBP2Vm1mzbuecKu9Rg-I4k4",
-  authDomain: "gambling-23339.firebaseapp.com",
-  projectId: "gambling-23339",
-  storageBucket: "gambling-23339.firebasestorage.app",
-  messagingSenderId: "1031894079454",
-  appId: "1:1031894079454:web:960ca0f1748493cdd9af4f",
-  measurementId: "G-GT74F5GVR2"
-};
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_ID",
+            appId: "YOUR_APP_ID"
+        };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // --- 전역 변수 ---
         let userDoc = null;
-        let userData = { balance: 100000, nickname: "", uid: "" };
+        let userData = { balance: 0, nickname: "", role: "user", history: [] };
 
-        // --- UI 전환 함수 ---
-        window.showView = (viewId) => {
+        // --- UI 전환 및 초기화 ---
+        window.showView = async (viewId) => {
+            // 바카라 입장 전 룰 팝업 처리
+            if (viewId === 'baccaratGame' && document.getElementById('baccaratGame').style.display === 'none') {
+                if (!confirm("♣️ 바카라 게임 룰 설명 ♣️\n\n1. 플레이어 vs 뱅커 중 합이 9에 가까운 쪽을 맞추는 게임입니다.\n2. 10, J, Q, K는 0점, A는 1점, 나머지는 숫자 그대로 계산합니다.\n3. 합이 10이 넘으면 일의 자리 숫자만 따집니다.\n4. 맞출 시 플레이어/뱅커는 2배, 타이는 8배를 받습니다.\n\n입장하시겠습니까?")) return;
+            }
+
             document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
             document.getElementById(viewId).style.display = 'block';
-            if(viewId === 'lobby') updateLobbyUI();
+            
+            if (userDoc) {
+                const snap = await getDoc(userDoc);
+                userData = snap.data();
+                updateUI();
+            }
+            if (viewId === 'snailGame') drawSnailRace();
+            if (viewId === 'baccaratGame') resetBaccaratTable();
         };
 
-        // --- 회원가입 및 로그인 ---
-        window.handleAuth = async (mode) => {
-            const email = document.getElementById('email').value;
-            const pw = document.getElementById('pw').value;
-            const nick = document.getElementById('nickname').value;
+        // --- 공통 UI 업데이트 (포인트 오류 수정) ---
+        function updateUI() {
+            const elements = document.querySelectorAll('.balance-txt');
+            elements.forEach(el => el.innerText = (userData.balance || 0).toLocaleString());
+            
+            if(document.getElementById('lobby-nick')) document.getElementById('lobby-nick').innerText = userData.nickname;
+            
+            // 기록 관리 (달팽이/바카라 기록 합치기)
+            const historyBody = document.getElementById('historyBody');
+            if (historyBody && userData.history) {
+                historyBody.innerHTML = userData.history.slice().reverse().map((h, i) => `
+                    <tr>
+                        <td>${h.game === 'snail' ? '🐌' : '🃏'}</td>
+                        <td>${h.bet}</td>
+                        <td>${h.result}</td>
+                        <td style="color:${h.profit >= 0 ? '#4ade80' : '#fb7185'}">${h.profit.toLocaleString()}</td>
+                    </tr>
+                `).join('');
+            }
+            if(userData.role === 'admin') document.getElementById('admin-btn').style.display = 'block';
+        }
 
-            try {
-                if (mode === 'signup') {
-                    const res = await createUserWithEmailAndPassword(auth, email, pw);
-                    await setDoc(doc(db, "users", res.user.uid), {
-                        nickname: nick || "익명",
-                        balance: 100000,
-                        role: "user"
-                    });
-                } else {
-                    await signInWithEmailAndPassword(auth, email, pw);
-                }
-            } catch (e) { alert(e.message); }
-        };
-
-        // --- 로그인 감지 ---
+        // --- 로그인/회원가입 ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 userDoc = doc(db, "users", user.uid);
                 const snap = await getDoc(userDoc);
                 userData = snap.data();
-                userData.uid = user.uid;
+                updateUI();
                 showView('lobby');
             } else {
                 showView('login');
             }
         });
 
-        // --- 포인트 관리 (DB 연동) ---
-        window.updatePoints = async (amount) => {
-            await updateDoc(userDoc, { balance: increment(amount) });
-            const snap = await getDoc(userDoc);
-            userData.balance = snap.data().balance;
-            document.querySelectorAll('.balance-txt').forEach(el => el.innerText = userData.balance.toLocaleString());
+        window.handleAuth = async (mode) => {
+            const email = document.getElementById('email').value;
+            const pw = document.getElementById('pw').value;
+            const nick = document.getElementById('nickname').value;
+            try {
+                if (mode === 'signup') {
+                    const res = await createUserWithEmailAndPassword(auth, email, pw);
+                    await setDoc(doc(db, "users", res.user.uid), { nickname: nick || "익명", balance: 100000, role: "user", history: [] });
+                } else {
+                    await signInWithEmailAndPassword(auth, email, pw);
+                }
+            } catch (e) { alert(e.message); }
         };
 
-        function updateLobbyUI() {
-            document.getElementById('lobby-nick').innerText = userData.nickname;
-            document.getElementById('lobby-balance').innerText = userData.balance.toLocaleString();
-            if(userData.role === 'admin') document.getElementById('admin-btn').style.display = 'block';
+        // --- 포인트 관리 함수 ---
+        async function updatePoints(profit, gameType, betInfo, resultInfo) {
+            await updateDoc(userDoc, {
+                balance: increment(profit),
+                history: arrayUnion({
+                    game: gameType,
+                    bet: betInfo,
+                    result: resultInfo,
+                    profit: profit,
+                    time: new Date().toISOString()
+                })
+            });
+            const snap = await getDoc(userDoc);
+            userData = snap.data();
+            updateUI();
         }
 
-        // --- 관리자 기능 ---
-        window.adminAddPoints = async () => {
-            const targetUid = prompt("대상 UID를 입력하세요:");
-            const amount = parseInt(prompt("추가할 포인트 양:"));
-            if(targetUid && amount) {
-                await updateDoc(doc(db, "users", targetUid), { balance: increment(amount) });
-                alert("반영되었습니다.");
-            }
-        };
-
-        // --- [게임 1] 달팽이 레이싱 ---
+        // --- [게임 1] 달팽이 레이싱 (엔드라인 수정) ---
         let isRacing = false;
+        const snailColors = ["#ff5e57", "#48dbfb", "#1dd1a1"];
+        function drawSnailRace(positions = [60, 60, 60]) {
+            const canvas = document.getElementById('snailCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0,0,800,300);
+            
+            // 엔드라인(결승선) 그리기
+            ctx.strokeStyle = "#ff4d4d";
+            ctx.lineWidth = 5;
+            ctx.setLineDash([10, 5]);
+            ctx.beginPath();
+            ctx.moveTo(720, 0); ctx.lineTo(720, 300);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            for(let i=0; i<3; i++) {
+                const y = 50 + i*90;
+                ctx.fillStyle = snailColors[i];
+                ctx.beginPath(); ctx.arc(positions[i], y, 20, 0, 7); ctx.fill(); // 달팽이 집
+                ctx.fillStyle = "#f0d0b0";
+                ctx.fillRect(positions[i], y+10, 30, 10); // 몸통
+                ctx.fillStyle = "white";
+                ctx.fillText(i+1 + "번", positions[i]-10, y+5);
+            }
+        }
+
         window.startSnailRace = async () => {
             const betInput = document.getElementById('snail-bet');
             const bet = parseInt(betInput.value);
             if(isRacing || bet > userData.balance || bet <= 0) return;
 
             isRacing = true;
-            toggleSnailControls(false); // 선택 잠금
-            await updatePoints(-bet);
+            document.getElementById('snail-btn').disabled = true;
+            await updatePoints(-bet, 'snail', '미선택', '진행중'); // 우선 차감
 
             let positions = [60, 60, 60];
-            const canvas = document.getElementById('snailCanvas');
-            const ctx = canvas.getContext('2d');
             let winner = null;
-
             while(!winner) {
-                ctx.clearRect(0,0,800,300);
                 for(let i=0; i<3; i++) {
                     positions[i] += Math.random() * 8 + 2;
-                    ctx.fillStyle = ["#ff5e57", "#48dbfb", "#1dd1a1"][i];
-                    ctx.beginPath(); ctx.arc(positions[i], 50 + i*90, 20, 0, 7); ctx.fill();
                     if(positions[i] >= 720) { winner = i; break; }
                 }
+                drawSnailRace(positions);
                 await new Promise(r => setTimeout(r, 40));
             }
 
             const selected = parseInt(document.querySelector('input[name="snail"]:checked').value);
-            if(selected === winner) await updatePoints(Math.floor(bet * 2.8));
+            let profit = 0;
+            if(selected === winner) profit = Math.floor(bet * 2.8);
             
             alert(`${winner+1}번 달팽이 승리!`);
+            await updatePoints(profit, 'snail', (selected+1)+'번 선택', (winner+1)+'번 우승');
             isRacing = false;
-            toggleSnailControls(true);
+            document.getElementById('snail-btn').disabled = false;
         };
 
-        function toggleSnailControls(enable) {
-            document.querySelectorAll('input[name="snail"]').forEach(el => el.disabled = !enable);
-            document.getElementById('snail-start-btn').disabled = !enable;
+        // --- [게임 2] 바카라 시각화 (카드 연출) ---
+        function resetBaccaratTable() {
+            document.getElementById('p-cards').innerHTML = '';
+            document.getElementById('b-cards').innerHTML = '';
+            document.getElementById('bac-status').innerText = '베팅을 기다리는 중...';
         }
 
-        window.snailAllIn = () => { document.getElementById('snail-bet').value = userData.balance; };
-
-        // --- [게임 2] 바카라 (간소화) ---
         window.playBaccarat = async (pick) => {
             const bet = parseInt(document.getElementById('bac-bet').value);
             if(bet > userData.balance || bet <= 0) return;
 
-            await updatePoints(-bet);
-            const pCard = Math.floor(Math.random() * 9) + 1;
-            const bCard = Math.floor(Math.random() * 9) + 1;
+            resetBaccaratTable();
+            document.querySelectorAll('.bac-btns button').forEach(b => b.disabled = true);
+            await updatePoints(-bet, 'baccarat', pick, '진행중');
+
+            const status = document.getElementById('bac-status');
+            
+            // 카드 뽑기 연출
+            const p1 = Math.floor(Math.random() * 10);
+            const b1 = Math.floor(Math.random() * 10);
+            const p2 = Math.floor(Math.random() * 10);
+            const b2 = Math.floor(Math.random() * 10);
+
+            const dealCard = (target, val) => {
+                const card = document.createElement('div');
+                card.className = 'card-obj';
+                card.innerText = val === 0 ? 'K' : val;
+                document.getElementById(target).appendChild(card);
+            };
+
+            status.innerText = '플레이어 카드 분배 중...';
+            await new Promise(r => setTimeout(r, 800)); dealCard('p-cards', p1);
+            await new Promise(r => setTimeout(r, 600)); dealCard('p-cards', p2);
+
+            status.innerText = '뱅커 카드 분배 중...';
+            await new Promise(r => setTimeout(r, 800)); dealCard('b-cards', b1);
+            await new Promise(r => setTimeout(r, 600)); dealCard('b-cards', b2);
+
+            const pScore = (p1 + p2) % 10;
+            const bScore = (b1 + b2) % 10;
             
             let result = "tie";
-            if(pCard > bCard) result = "player";
-            else if(bCard > pCard) result = "banker";
+            if(pScore > bScore) result = "player";
+            else if(bScore > pScore) result = "banker";
 
-            let msg = `플레이어: ${pCard} vs 뱅커: ${bCard}\n`;
+            status.innerText = `결과 확인: 플레이어 ${pScore} vs 뱅커 ${bScore}`;
+            await new Promise(r => setTimeout(r, 1000));
+
+            let profit = 0;
             if(pick === result) {
-                const multi = result === 'tie' ? 8 : 2;
-                await updatePoints(bet * multi);
-                msg += "당첨되었습니다!";
+                profit = result === 'tie' ? bet * 8 : bet * 2;
+                alert(`축하합니다! ${result} 당첨!`);
             } else {
-                msg += "낙첨되었습니다.";
+                alert(`아쉽네요. ${result} 승리.`);
             }
-            alert(msg);
+
+            await updatePoints(profit, 'baccarat', pick, `P:${pScore} B:${bScore}`);
+            document.querySelectorAll('.bac-btns button').forEach(b => b.disabled = false);
+        };
+
+        window.allIn = (id) => { document.getElementById(id).value = userData.balance; };
+        window.adminAdd = async () => {
+            const uid = prompt("UID 입력:");
+            const amt = parseInt(prompt("금액 입력:"));
+            await updateDoc(doc(db, "users", uid), { balance: increment(amt) });
+            alert("완료");
         };
 
     </script>
     <style>
-        body { background: #1a1a1a; color: white; text-align: center; font-family: sans-serif; }
+        body { background: #1a1a1a; color: white; text-align: center; font-family: 'Pretendard', sans-serif; margin: 0; }
         .view { display: none; padding: 20px; }
-        .card { background: #2d2d2d; padding: 20px; border-radius: 10px; display: inline-block; margin-top: 50px; }
-        input { padding: 10px; margin: 5px; background: #333; color: white; border: 1px solid #444; }
-        button { padding: 10px 20px; background: #27ae60; color: white; border: none; cursor: pointer; border-radius: 5px; }
-        .all-in { background: #e67e22; }
-        canvas { background: #222; border: 2px solid #444; margin: 20px auto; display: block; }
+        .card { background: #2d2d2d; padding: 25px; border-radius: 15px; display: inline-block; margin-top: 30px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+        input { padding: 12px; margin: 10px; background: #333; color: white; border: 1px solid #444; border-radius: 5px; }
+        button { padding: 12px 24px; background: #27ae60; color: white; border: none; cursor: pointer; border-radius: 5px; font-weight: bold; }
+        button:hover { background: #2ecc71; }
+        .all-in { background: #e67e22; margin-left: 5px; }
+        canvas { background: #222; border: 3px solid #333; margin: 20px auto; display: block; border-radius: 10px; }
+        
+        /* 바카라 카드 스타일 */
+        .baccarat-table { display: flex; justify-content: center; gap: 40px; margin: 20px 0; }
+        .side { background: #145a32; padding: 20px; border-radius: 10px; min-width: 150px; min-height: 120px; border: 2px solid #1e8449; }
+        .card-obj { width: 50px; height: 75px; background: white; color: black; display: inline-block; margin: 5px; border-radius: 5px; line-height: 75px; font-weight: bold; font-size: 20px; box-shadow: 2px 2px 5px rgba(0,0,0,0.3); animation: flip 0.5s; }
+        @keyframes flip { from { transform: rotateY(90deg); } to { transform: rotateY(0deg); } }
+        
+        table { width: 80%; margin: 20px auto; border-collapse: collapse; background: #2d2d2d; font-size: 14px; }
+        th, td { border: 1px solid #444; padding: 10px; }
+        th { background: #3d3d3d; }
     </style>
 </head>
 <body>
 
-    <div id="login" class="view" style="display: block;">
+    <div id="login" class="view">
         <div class="card">
-            <h2>🎰 교육용 도박 플랫폼</h2>
+            <h2>🛡️ 청소년 도박 예방 교육 사이트</h2>
             <input type="email" id="email" placeholder="이메일"><br>
             <input type="password" id="pw" placeholder="비밀번호"><br>
-            <input type="text" id="nickname" placeholder="닉네임 (가입 시)"><br>
+            <input type="text" id="nickname" placeholder="닉네임 (최초 가입 시)"><br>
             <button onclick="handleAuth('login')">로그인</button>
             <button onclick="handleAuth('signup')" style="background:#2980b9">회원가입</button>
         </div>
     </div>
 
     <div id="lobby" class="view">
-        <h1>환영합니다, <span id="lobby-nick"></span>님!</h1>
-        <h3>현재 포인트: <span id="lobby-balance" class="balance-txt"></span> P</h3>
-        <hr>
-        <button onclick="showView('snailGame')" style="font-size:20px; padding:30px;">🐌 달팽이 경주</button>
-        <button onclick="showView('baccaratGame')" style="font-size:20px; padding:30px; background:#c0392b;">🃏 바카라</button>
-        <br><br>
-        <button id="admin-btn" onclick="adminAddPoints()" style="display:none; background:#8e44ad;">🔧 관리자 도구</button>
+        <h1>Welcome, <span id="lobby-nick"></span>!</h1>
+        <div style="font-size: 24px; margin: 20px; color: #f1c40f;">보유 포인트: <span class="balance-txt">0</span> P</div>
+        <button onclick="showView('snailGame')" style="font-size:20px; padding:40px;">🐌 달팽이 경주 시작</button>
+        <button onclick="showView('baccaratGame')" style="font-size:20px; padding:40px; background:#c0392b;">🃏 바카라 입장</button>
+        <div style="margin-top:40px;">
+            <h3>최근 게임 기록</h3>
+            <table>
+                <thead><tr><th>종목</th><th>베팅 정보</th><th>결과</th><th>수익</th></tr></thead>
+                <tbody id="historyBody"></tbody>
+            </table>
+        </div>
+        <button id="admin-btn" onclick="adminAdd()" style="display:none; background:#8e44ad; margin-top:20px;">🔧 관리자 포인트 지급</button>
     </div>
 
     <div id="snailGame" class="view">
-        <button onclick="showView('lobby')">⬅ 로비로</button>
+        <button onclick="showView('lobby')">⬅ 로비로 돌아가기</button>
         <h2>🐌 달팽이 경주 (잔액: <span class="balance-txt"></span>P)</h2>
         <canvas id="snailCanvas" width="800" height="300"></canvas>
-        <div>
+        <div style="margin: 10px;">
             <input type="radio" name="snail" value="0" checked> 1번 | 
             <input type="radio" name="snail" value="1"> 2번 | 
             <input type="radio" name="snail" value="2"> 3번
         </div>
-        <br>
         <input type="number" id="snail-bet" value="10000">
-        <button class="all-in" onclick="snailAllIn()">ALL-IN</button>
-        <button id="snail-start-btn" onclick="startSnailRace()">경기 시작</button>
+        <button class="all-in" onclick="allIn('snail-bet')">ALL-IN</button>
+        <button id="snail-btn" onclick="startSnailRace()">경기 시작!</button>
     </div>
 
     <div id="baccaratGame" class="view">
-        <button onclick="showView('lobby')">⬅ 로비로</button>
-        <h2>🃏 미니 바카라 (잔액: <span class="balance-txt"></span>P)</h2>
-        <div style="margin: 30px;">
-            베팅금: <input type="number" id="bac-bet" value="10000">
+        <button onclick="showView('lobby')">⬅ 로비로 돌아가기</button>
+        <h2>🃏 리얼 바카라 테이블</h2>
+        <div style="color: #f1c40f; margin-bottom: 10px;">잔액: <span class="balance-txt"></span>P</div>
+        <div id="bac-status" style="font-weight: bold; color: #2ecc71; margin: 10px;">베팅을 기다리는 중...</div>
+        
+        <div class="baccarat-table">
+            <div class="side">
+                <div style="margin-bottom:10px;">PLAYER</div>
+                <div id="p-cards"></div>
+            </div>
+            <div class="side" style="background: #78281f; border-color: #943126;">
+                <div style="margin-bottom:10px;">BANKER</div>
+                <div id="b-cards"></div>
+            </div>
         </div>
-        <button onclick="playBaccarat('player')" style="padding:20px; width:100px;">PLAYER</button>
-        <button onclick="playBaccarat('tie')" style="background:#9b59b6; padding:20px; width:100px;">TIE</button>
-        <button onclick="playBaccarat('banker')" style="background:#c0392b; padding:20px; width:100px;">BANKER</button>
+
+        <div class="bac-btns">
+            <input type="number" id="bac-bet" value="10000" style="width:150px;">
+            <button class="all-in" onclick="allIn('bac-bet')">ALL-IN</button><br><br>
+            <button onclick="playBaccarat('player')">PLAYER (2x)</button>
+            <button onclick="playBaccarat('tie')" style="background:#8e44ad">TIE (8x)</button>
+            <button onclick="playBaccarat('banker')" style="background:#c0392b">BANKER (2x)</button>
+        </div>
     </div>
 
 </body>
