@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+V<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -6,85 +6,38 @@
     <title>로그인 및 회원가입 | SUPER 9 BET</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        :root { --point-gold: #eebb4d; --bg-dark: #0a0a0a; --neon-gold: 0 0 10px #eebb4d, 0 0 20px #eebb4d; }
-        body { 
-            background-color: var(--bg-dark); 
-            color: #fff; 
-            font-family: 'Noto Sans KR', sans-serif; 
-            margin: 0; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh;
-            overflow: hidden;
-        }
-        .login-box {
-            background: #151515;
-            padding: 50px;
-            border-radius: 20px;
-            border: 2px solid var(--point-gold);
-            text-align: center;
-            box-shadow: var(--neon-gold); /* 네온 효과 */
-            width: 400px;
-        }
-        .logo { font-size: 32px; font-weight: 900; color: #fff; font-style: italic; margin-bottom: 30px; text-shadow: var(--neon-gold); }
-        .logo span { color: var(--point-gold); }
-        
-        .tab-menu { display: flex; margin-bottom: 20px; border-bottom: 1px solid #333; }
-        .tab { flex: 1; padding: 10px; cursor: pointer; color: #888; font-weight: 700; }
-        .tab.active { color: var(--point-gold); border-bottom: 2px solid var(--point-gold); }
-
-        input {
-            width: 100%;
-            padding: 15px;
-            margin-bottom: 15px;
-            background: #000;
-            border: 1px solid #333;
-            color: #fff;
-            border-radius: 5px;
-            box-sizing: border-box;
-            transition: 0.3s;
-        }
-        input:focus { border-color: var(--point-gold); outline: none; box-shadow: 0 0 5px var(--point-gold); }
-
-        .btn-main {
-            width: 100%;
-            padding: 15px;
-            background: linear-gradient(to bottom, #ffd700, #b8860b);
-            border: none;
-            color: #000;
-            font-weight: 900;
-            font-size: 18px;
-            border-radius: 5px;
-            cursor: pointer;
-            box-shadow: 0 4px 0 #7b6500;
-        }
-        .btn-main:active { transform: translateY(2px); box-shadow: none; }
-        
+        :root { --point-gold: #eebb4d; --point-green: #2ecc71; --bg-dark: #0a0a0a; --neon-mix: 0 0 15px #eebb4d, 0 0 30px #2ecc71; }
+        body { background-color: var(--bg-dark); color: #fff; font-family: 'Noto Sans KR', sans-serif; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; background: radial-gradient(circle at center, #0a2e10 0%, #0a0a0a 100%); }
+        .login-box { background: rgba(21, 21, 21, 0.95); padding: 50px; border-radius: 25px; border: 2px solid var(--point-green); text-align: center; box-shadow: var(--neon-mix); width: 400px; backdrop-filter: blur(15px); }
+        .logo { font-size: 35px; font-weight: 900; color: #fff; font-style: italic; margin-bottom: 30px; text-shadow: 0 0 20px #2ecc71; }
+        .logo span { color: var(--point-gold); text-shadow: 0 0 20px #eebb4d; }
+        .tab-menu { display: flex; margin-bottom: 25px; border-bottom: 1px solid #333; }
+        .tab { flex: 1; padding: 12px; cursor: pointer; color: #666; font-weight: 700; transition: 0.3s; }
+        .tab.active { color: var(--point-green); border-bottom: 3px solid var(--point-green); text-shadow: 0 0 10px var(--point-green); }
+        input { width: 100%; padding: 15px; margin-bottom: 15px; background: #000; border: 1px solid #333; color: #fff; border-radius: 8px; box-sizing: border-box; transition: 0.3s; }
+        input:focus { border-color: var(--point-green); outline: none; box-shadow: 0 0 10px rgba(46, 204, 113, 0.4); }
+        .btn-main { width: 100%; padding: 18px; background: linear-gradient(135deg, #2ecc71, #27ae60); border: none; color: #fff; font-weight: 900; font-size: 19px; border-radius: 8px; cursor: pointer; box-shadow: 0 0 15px rgba(46, 204, 113, 0.5); transition: 0.3s; }
+        .btn-main:hover { transform: scale(1.03); box-shadow: 0 0 25px rgba(46, 204, 113, 0.7); }
         #registerForm { display: none; }
     </style>
 </head>
 <body>
-
     <div class="login-box">
         <div class="logo">S <span>SUPER 9 BET</span></div>
-        
         <div class="tab-menu">
-            <div id="t-login" class="tab active" onclick="showTab('login')">로그인</div>
-            <div id="t-join" class="tab" onclick="showTab('join')">회원가입</div>
+            <div id="t-login" class="tab active" onclick="showTab('login')">LOGIN</div>
+            <div id="t-join" class="tab" onclick="showTab('join')">JOIN</div>
         </div>
-
         <div id="loginForm">
-            <input type="text" id="loginEmail" placeholder="이메일 주소">
-            <input type="password" id="loginPw" placeholder="비밀번호">
-            <button class="btn-main" onclick="handleLogin()">로그인 접속</button>
+            <input type="text" id="loginEmail" placeholder="ID (Email Address)">
+            <input type="password" id="loginPw" placeholder="Password">
+            <button class="btn-main" onclick="handleLogin()">ENTER CASINO</button>
         </div>
-
         <div id="registerForm">
-            <input type="text" id="regNick" placeholder="사용할 닉네임">
-            <input type="email" id="regEmail" placeholder="이메일 주소">
-            <input type="password" id="regPw" placeholder="비밀번호 (6자 이상)">
-            <button class="btn-main" onclick="handleRegister()">회원가입 완료</button>
+            <input type="text" id="regNick" placeholder="Nickname">
+            <input type="email" id="regEmail" placeholder="Email Address">
+            <input type="password" id="regPw" placeholder="Password (Min. 6 characters)">
+            <button class="btn-main" onclick="handleRegister()">CREATE ACCOUNT</button>
         </div>
     </div>
 
@@ -93,62 +46,28 @@
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
         import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
-        const firebaseConfig = { 
-            apiKey: "AIzaSyDOVJtg5lxJTBP2Vm1mzbuecKu9Rg-I4k4", 
-            authDomain: "gambling-23339.firebaseapp.com", 
-            projectId: "gambling-23339", 
-            storageBucket: "gambling-23339.firebasestorage.app", 
-            messagingSenderId: "1031894079454", 
-            appId: "1:1031894079454:web:960ca0f1748493cdd9af4f" 
-        };
+        const firebaseConfig = { apiKey: "AIzaSyDOVJtg5lxJTBP2Vm1mzbuecKu9Rg-I4k4", authDomain: "gambling-23339.firebaseapp.com", projectId: "gambling-23339", storageBucket: "gambling-23339.firebasestorage.app", messagingSenderId: "1031894079454", appId: "1:1031894079454:web:960ca0f1748493cdd9af4f" };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // 탭 전환 함수
-        window.showTab = (type) => {
-            if(type === 'login') {
-                document.getElementById('loginForm').style.display = 'block';
-                document.getElementById('registerForm').style.display = 'none';
-                document.getElementById('t-login').classList.add('active');
-                document.getElementById('t-join').classList.remove('active');
-            } else {
-                document.getElementById('loginForm').style.display = 'none';
-                document.getElementById('registerForm').style.display = 'block';
-                document.getElementById('t-join').classList.add('active');
-                document.getElementById('t-login').classList.remove('active');
-            }
-        }
-
-        // 로그인 실행
-        window.handleLogin = () => {
-            const email = document.getElementById('loginEmail').value;
-            const pw = document.getElementById('loginPw').value;
-            signInWithEmailAndPassword(auth, email, pw)
-                .then(() => location.href = "index.html")
-                .catch(err => alert("로그인 실패: 정보를 확인하세요."));
+        window.showTab = (t) => {
+            document.getElementById('loginForm').style.display = t==='login'?'block':'none';
+            document.getElementById('registerForm').style.display = t==='join'?'block':'none';
+            document.getElementById('t-login').classList.toggle('active', t==='login');
+            document.getElementById('t-join').classList.toggle('active', t==='join');
         };
-
-        // 회원가입 실행
+        window.handleLogin = () => {
+            signInWithEmailAndPassword(auth, document.getElementById('loginEmail').value, document.getElementById('loginPw').value)
+                .then(() => location.href="index.html").catch(() => alert("ID/PW 불일치"));
+        };
         window.handleRegister = () => {
-            const nick = document.getElementById('regNick').value;
-            const email = document.getElementById('regEmail').value;
-            const pw = document.getElementById('regPw').value;
-
-            if(!nick || !email || pw.length < 6) return alert("입력 정보를 확인하세요 (비번 6자 이상)");
-
-            createUserWithEmailAndPassword(auth, email, pw)
-                .then(async (result) => {
-                    // 가입 성공 시 Firestore에 초기 데이터 생성
-                    await setDoc(doc(db, "users", result.user.uid), {
-                        nickname: nick,
-                        balance: 100000, // 신규 가입 축하금 10만 원
-                        role: 'user'
-                    });
-                    alert("가입을 환영합니다! 100,000 포인트가 지급되었습니다.");
-                    location.href = "index.html";
-                })
-                .catch(err => alert("가입 실패: 이미 존재하는 이메일이거나 형식이 잘못되었습니다."));
+            const nick = document.getElementById('regNick').value, email = document.getElementById('regEmail').value, pw = document.getElementById('regPw').value;
+            if(!nick || !email || pw.length < 6) return alert("입력 정보 미비");
+            createUserWithEmailAndPassword(auth, email, pw).then(async (res) => {
+                await setDoc(doc(db, "users", res.user.uid), { nickname: nick, balance: 100000, role: 'user' });
+                alert("가입 완료! 10만 포인트 지급."); location.href="index.html";
+            }).catch(() => alert("가입 실패"));
         };
     </script>
 </body>
