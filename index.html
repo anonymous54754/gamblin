@@ -238,7 +238,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, updateDoc, increment, collection, addDoc, getDocs, query, orderBy, deleteDoc, limit } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+        // 1. where 함수를 추가로 import 합니다.
+        import { getFirestore, doc, getDoc, updateDoc, increment, collection, addDoc, getDocs, query, orderBy, deleteDoc, limit, where } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDOVJtg5lxJTBP2Vm1mzbuecKu9Rg-I4k4", authDomain: "gambling-23339.firebaseapp.com", projectId: "gambling-23339", storageBucket: "gambling-23339.firebasestorage.app", messagingSenderId: "1031894079454", appId: "1:1031894079454:web:960ca0f1748493cdd9af4f" };
         const app = initializeApp(firebaseConfig);
@@ -299,7 +300,6 @@
                     const sevens = r.filter(v => v === '7️⃣').length;
                     const anyTwoEqual = (r[0] === r[1] || r[1] === r[2] || r[0] === r[2]);
                     
-                    // 슬롯 배당 0.3 하향 조정 (17.7->17.4, 2.7->2.4, 1.5->1.2)
                     if (sevens === 3) mul = 17.4;
                     else if (sevens === 2) mul = 2.4;
                     else if (anyTwoEqual) mul = 1.2;
@@ -331,7 +331,6 @@
             const pS = (c[0].v + c[2].v)%10, bS = (c[1].v + c[3].v)%10;
             const win = pS > bS ? 'player' : (bS > pS ? 'banker' : 'tie');
             
-            // 바카라 배당 0.3 하향 조정 (P/B 2.5->2.2, Tie 9.0->8.7)
             let profit = (pick === win) ? (win === 'tie' ? bet * 8.7 : bet * 2.2) - bet : -bet;
             setTimeout(() => { processBet("바카라", bet, profit); showPopup(profit>0, profit); }, 500);
         };
@@ -355,7 +354,6 @@
                 snX = snX.map((x, i) => { const nx = x + Math.random()*5; if(nx > 620) win = i; return nx; });
                 if(win !== -1) {
                     clearInterval(iv);
-                    // 달팽이 배당 0.3 하향 조정 (2.8->2.5)
                     const p = (win === pick) ? (bet * 2.5) - bet : -bet;
                     processBet("달팽이", bet, p); showPopup(p>0, p); snX = [10,10,10];
                 }
@@ -392,16 +390,30 @@
             if(rep) { await updateDoc(doc(db, "cs", id), { reply: rep }); loadCS(); }
         };
 
+        // 2. loadHistory 함수를 수정하여 본인의 기록만 가져오게 합니다.
         async function loadHistory() {
-            const q = query(collection(db, "history"), orderBy("time", "desc"), limit(20));
-            const snap = await getDocs(q);
-            document.getElementById('historyList').innerHTML = snap.docs.map(d => {
-                const h = d.data();
-                return `<div style="border-bottom:1px solid #222; padding:10px; font-size:13px;">
-                    [${h.game}] 베팅: ${h.bet.toLocaleString()} | <b>수익: <span style="color:${h.profit>=0?'#4facfe':'#ff5252'}">${h.profit.toLocaleString()}</span></b>
-                    <span style="float:right; color:#555;">${h.time.toDate().toLocaleString()}</span>
-                </div>`;
-            }).join('') || "내역이 없습니다.";
+            // 본인의 uid가 일치하는 데이터만 가져오도록 where 조건을 추가했습니다.
+            const q = query(
+                collection(db, "history"), 
+                where("uid", "==", userObj.uid), 
+                orderBy("time", "desc"), 
+                limit(20)
+            );
+            
+            try {
+                const snap = await getDocs(q);
+                document.getElementById('historyList').innerHTML = snap.docs.map(d => {
+                    const h = d.data();
+                    return `<div style="border-bottom:1px solid #222; padding:10px; font-size:13px;">
+                        [${h.game}] 베팅: ${h.bet.toLocaleString()} | <b>수익: <span style="color:${h.profit>=0?'#4facfe':'#ff5252'}">${h.profit.toLocaleString()}</span></b>
+                        <span style="float:right; color:#555;">${h.time.toDate().toLocaleString()}</span>
+                    </div>`;
+                }).join('') || "내역이 없습니다.";
+            } catch (e) {
+                // 인덱스가 없을 경우 콘솔창에 에러 링크가 뜹니다.
+                console.error("기록 로드 실패: ", e);
+                document.getElementById('historyList').innerHTML = "내역을 불러오는 중 에러가 발생했습니다. (관리자 설정을 확인하세요)";
+            }
         }
 
         window.showView = (v) => {
